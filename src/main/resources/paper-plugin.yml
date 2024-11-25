@@ -1,7 +1,9 @@
-name: PaperBoilerplate
-main: com.liamxsage.boilerplates.PaperBoilerplate
+name: WorldEngine
+main: com.liamxsage.worldengine.WorldEngine
 version: ${version}
-description: "This is a template for a new plugin based on Paper and the new Minecraft API."
+description: "WorldManagement kept ahead of the curve, always planning a step further"
 author: "LiamXSage"
 api-version: "1.21"
-loader: com.liamxsage.boilerplates.DependencyLoader
+loader: com.liamxsage.worldengine.DependencyLoader
+bootstrapper: com.liamxsage.worldengine.CommandBootstrapper
+load: STARTUP

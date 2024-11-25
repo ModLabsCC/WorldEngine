@@ -1,12 +1,11 @@
-package com.liamxsage.boilerplates.managers
+package com.liamxsage.worldengine.managers
 
 import com.google.common.reflect.ClassPath
-import com.liamxsage.boilerplates.PACKAGE_NAME
-import com.liamxsage.boilerplates.PaperBoilerplate
-import com.liamxsage.boilerplates.annotations.RegisterCommand
-import com.liamxsage.boilerplates.extensions.getLogger
-import com.liamxsage.boilerplates.extensions.sendMessagePrefixed
-import com.liamxsage.boilerplates.listeners.TemplateListener
+import com.liamxsage.worldengine.PACKAGE_NAME
+import com.liamxsage.worldengine.WorldEngine
+import com.liamxsage.worldengine.annotations.RegisterCommand
+import com.liamxsage.worldengine.extensions.getLogger
+import com.liamxsage.worldengine.extensions.sendMessagePrefixed
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.PluginCommand
@@ -22,7 +21,7 @@ object RegisterManager {
 
     private fun <T : Any> loadClassesInPackage(packageName: String, clazzType: KClass<T>): List<KClass<out T>> {
         try {
-            val classLoader = PaperBoilerplate.instance.javaClass.classLoader
+            val classLoader = WorldEngine.instance.javaClass.classLoader
             val allClasses = ClassPath.from(classLoader).allClasses
             val classes = mutableListOf<KClass<out T>>()
             for (classInfo in allClasses) {
@@ -57,7 +56,7 @@ object RegisterManager {
         annotation: KClass<out Annotation>
     ): List<KClass<out Any>> {
         try {
-            val classLoader = PaperBoilerplate.instance.javaClass.classLoader
+            val classLoader = WorldEngine.instance.javaClass.classLoader
             val allClasses = ClassPath.from(classLoader).allClasses
             val classes = mutableListOf<KClass<out Any>>()
             for (classInfo in allClasses) {
@@ -92,7 +91,7 @@ object RegisterManager {
 
             constructor.isAccessible = true
 
-            val command: PluginCommand = constructor.newInstance(annotation.name, PaperBoilerplate.instance)
+            val command: PluginCommand = constructor.newInstance(annotation.name, WorldEngine.instance)
 
 
             command.aliases = annotation.aliases.toList()
@@ -115,7 +114,7 @@ object RegisterManager {
             command.tabCompleter = commandInstance as? org.bukkit.command.TabCompleter
 
 
-            Bukkit.getCommandMap().register(PaperBoilerplate.instance.name.lowercase(), command)
+            Bukkit.getCommandMap().register(WorldEngine.instance.name.lowercase(), command)
             Bukkit.getConsoleSender().sendMessage("Command ${command.name} registered")
         }
 
@@ -127,14 +126,11 @@ object RegisterManager {
      * with the Bukkit plugin manager.
      */
     fun registerListeners() {
-        val listenerClasses = listOf(
-            TemplateListener(),
-            // Add more listeners here
-        )
+        val listenerClasses = emptyList<Listener>()
         var amountListeners = 0
         for (listener in listenerClasses) {
             try {
-                Bukkit.getPluginManager().registerEvents(listener, PaperBoilerplate.instance)
+                Bukkit.getPluginManager().registerEvents(listener, WorldEngine.instance)
                 amountListeners++
             } catch (e: Exception) {
                 logger.error("Exception while registering listener: ${listener.javaClass.simpleName}")

@@ -1,4 +1,4 @@
-package com.liamxsage.boilerplates.annotations
+package com.liamxsage.worldengine.annotations
 
 import org.bukkit.permissions.PermissionDefault
 

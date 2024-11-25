@@ -1,19 +1,23 @@
+import java.util.*
+
 plugins {
     kotlin("jvm") version "2.0.0"
-    id("io.papermc.paperweight.userdev") version "1.7.1"
+    id("io.papermc.paperweight.userdev") version "1.7.2"
     kotlin("plugin.serialization") version "2.0.0"
 }
 
 val pluginVersion: String by project
 
-group = "com.liamxsage.boilerplates"
-version = pluginVersion
+val dailyVersion = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin")).run {
+    "${get(Calendar.YEAR)}.${get(Calendar.MONTH) + 1}.${get(Calendar.DAY_OF_MONTH)}"
+}
+
+group = "com.liamxsage.worldengine"
+version = "$pluginVersion-$dailyVersion"
 
 val minecraftVersion: String by project
 val slf4jVersion: String by project
 
-val exposedVersion: String by project
-val hikariCPVersion: String by project
 val dotenvKotlinVersion: String by project
 
 val fruxzAscendVersion: String by project
@@ -23,8 +27,6 @@ val kotlinxCoroutinesCoreVersion: String by project
 val kotlinxCollectionsImmutableVersion: String by project
 
 val gsonVersion: String by project
-
-val ktorVersion: String by project
 
 val mcCoroutineVersion: String by project
 
@@ -41,24 +43,10 @@ val deliverDependencies = listOf(
     "org.jetbrains.kotlinx:kotlinx-collections-immutable:$kotlinxCollectionsImmutableVersion",
     "com.google.code.gson:gson:$gsonVersion",
 
-    "io.ktor:ktor-client-core-jvm:$ktorVersion",
-    "io.ktor:ktor-client-cio-jvm:$ktorVersion",
-    "io.ktor:ktor-client-json-jvm:$ktorVersion",
-    "io.ktor:ktor-serialization-kotlinx-json-jvm:$ktorVersion",
-    "io.ktor:ktor-client-serialization-jvm:$ktorVersion",
-    "io.ktor:ktor-client-content-negotiation-jvm:$ktorVersion",
-
     "dev.fruxz:ascend:$fruxzAscendVersion",
     "dev.fruxz:stacked:$fruxzStackedVersion",
 
     "io.github.cdimascio:dotenv-kotlin:$dotenvKotlinVersion", // - .env support
-
-    "org.jetbrains.exposed:exposed-core:$exposedVersion",
-    "org.jetbrains.exposed:exposed-dao:$exposedVersion",
-    "org.jetbrains.exposed:exposed-jdbc:$exposedVersion",
-    "org.jetbrains.exposed:exposed-java-time:$exposedVersion",
-    "com.zaxxer:HikariCP:$hikariCPVersion",
-
     "org.slf4j:slf4j-api:$slf4jVersion",
 )
 

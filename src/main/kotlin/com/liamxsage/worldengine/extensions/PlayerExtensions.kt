@@ -1,7 +1,7 @@
-package com.liamxsage.boilerplates.extensions
+package com.liamxsage.worldengine.extensions
 
-import com.liamxsage.boilerplates.BLOCK_PREFIX
-import com.liamxsage.boilerplates.PREFIX
+import com.liamxsage.worldengine.BLOCK_PREFIX
+import com.liamxsage.worldengine.PREFIX
 import dev.fruxz.stacked.text
 import org.bukkit.*
 import org.bukkit.command.CommandSender

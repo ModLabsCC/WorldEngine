@@ -1,9 +1,10 @@
-package com.liamxsage.boilerplates.extensions
+package com.liamxsage.worldengine.extensions
 
+import com.liamxsage.worldengine.WorldEngine
 import org.slf4j.LoggerFactory
 
 fun <T : Any> T.getLogger(): org.slf4j.Logger {
-    return LoggerFactory.getLogger(this::class.java)
+    return LoggerFactory.getLogger(WorldEngine::class.java)
 }
 
 fun <T : Any> T.nullIf(condition: (T) -> Boolean): T? {
