@@ -1,0 +1,7 @@
+name: PaperBoilerplate
+main: com.liamxsage.boilerplates.PaperBoilerplate
+version: ${version}
+description: "This is a template for a new plugin based on Paper and the new Minecraft API."
+author: "LiamXSage"
+api-version: "1.21"
+loader: com.liamxsage.boilerplates.DependencyLoader
