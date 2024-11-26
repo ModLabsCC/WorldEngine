@@ -12,7 +12,7 @@ val dailyVersion = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin")).r
     "${get(Calendar.YEAR)}.${get(Calendar.MONTH) + 1}.${get(Calendar.DAY_OF_MONTH)}"
 }
 
-group = "com.liamxsage.worldengine"
+group = "cc.modlabs.worldengine"
 version = "$pluginVersion-$dailyVersion"
 
 val minecraftVersion: String by project
@@ -59,6 +59,8 @@ fun Dependency?.deliver() = this?.apply {
 
 dependencies {
     paperweight.paperDevBundle("$minecraftVersion-R0.1-SNAPSHOT")
+
+    compileOnly("me.clip:placeholderapi:2.11.6")
 
     implementation(kotlin("stdlib")).deliver()
     implementation(kotlin("reflect")).deliver()

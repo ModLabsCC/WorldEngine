@@ -1,9 +1,15 @@
 name: WorldEngine
-main: com.liamxsage.worldengine.WorldEngine
+main: cc.modlabs.worldengine.WorldEngine
 version: ${version}
 description: "WorldManagement kept ahead of the curve, always planning a step further"
 author: "LiamXSage"
 api-version: "1.21"
-loader: com.liamxsage.worldengine.DependencyLoader
-bootstrapper: com.liamxsage.worldengine.CommandBootstrapper
+loader: cc.modlabs.worldengine.DependencyLoader
+bootstrapper: cc.modlabs.worldengine.CommandBootstrapper
 load: STARTUP
+
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: false

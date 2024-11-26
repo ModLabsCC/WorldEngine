@@ -1,0 +1,11 @@
+
+
+general:
+  prefix: "<gradient:#4a69bd:#6a89cc>WorldEngine</gradient> <color:#4a628f>>></color> <color:#b2c2d4>"
+
+
+commands:
+  world:
+    info:
+      teleported: <green>Teleported to world {world}
+      creating: <green>Creating world {world}
