@@ -1,7 +1,7 @@
 <br />
 <div align="center">
   <a href="https://discord.com/users/216487432667791360">
-    <img src="https://github.com/ModLabsCC/WorldEngine/blob/main/assets/worldengine.png" alt="Logo" width="200" height="200">
+    <img src="https://github.com/ModLabsCC/WorldEngine/blob/main/.github/assets/worldengine.png" alt="Logo" width="200" height="200">
 </a>
 
 <h3 align="center">WorldEngine</h3>
