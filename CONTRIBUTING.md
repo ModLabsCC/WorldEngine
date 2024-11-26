@@ -1,4 +1,4 @@
-# Contributing to DevSky Boilerplates
+# Contributing to WorldEngine
 We love your input! We want to make contributing to this project as easy and transparent as possible, whether it's:
 
 - Reporting a bug
@@ -44,6 +44,15 @@ People *love* thorough bug reports. I'm not even kidding.
 ## Use a Consistent Coding Style
 
 * Stay close to the languages code style
+
+## Code of Conduct
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to understand the standards we expect from our community.
+
+## Pull Request Template
+When submitting a pull request, please use the [Pull Request Template](PULL_REQUEST_TEMPLATE.md) to ensure all necessary information is provided.
+
+## Security
+For information on reporting security vulnerabilities, please see our [Security Policy](SECURITY.md).
 
 ## License
 By contributing, you agree that your contributions will be licensed under its MIT License.
