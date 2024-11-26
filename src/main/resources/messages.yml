@@ -7,5 +7,9 @@ general:
 commands:
   world:
     info:
-      teleported: <green>Teleported to world {world}
-      creating: <green>Creating world {world}
+      teleported: <green>Teleported.
+      creating: <green>Creating world <yellow>{world}
+  worldinfo:
+    info:
+      currentWorld: You are in the world <yellow>{world}
+

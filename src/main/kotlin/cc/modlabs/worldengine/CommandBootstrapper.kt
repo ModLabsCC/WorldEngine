@@ -2,6 +2,7 @@ package cc.modlabs.worldengine
 
 import cc.modlabs.worldengine.commands.createWorldCommand
 import cc.modlabs.worldengine.commands.createWorldEngineCommand
+import cc.modlabs.worldengine.commands.createWorldInfoCommand
 import io.papermc.paper.plugin.bootstrap.BootstrapContext
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
@@ -23,6 +24,12 @@ class CommandBootstrapper : PluginBootstrap {
             commands.register(
                 createWorldEngineCommand(),
                 "Plugin management",
+            )
+
+            commands.register(
+                createWorldInfoCommand(),
+                "World information",
+                listOf("wi")
             )
         }
     }
