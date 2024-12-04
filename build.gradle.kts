@@ -31,7 +31,7 @@ val gsonVersion: String by project
 val mcCoroutineVersion: String by project
 
 repositories {
-    maven("https://nexus.flawcra.cc/repository/maven-mirrors/")
+    maven("https://nexus.modlabs.cc/repository/maven-mirrors/")
 }
 
 val deliverDependencies = listOf(
