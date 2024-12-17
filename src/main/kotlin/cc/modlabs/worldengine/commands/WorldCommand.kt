@@ -28,6 +28,11 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
                 logger.info("Executing command `world` with argument ${context.getArgument<String>("world", String::class.java)}")
 
                 val worldName = context.getArgument<String>("world", String::class.java)
+                if (!hasWorldPermission(player, worldName)) {
+                    player.sendMessagePrefixed("commands.world.errors.no-permission", placeholders = mapOf("world" to worldName), default = "<red>You do not have permission to access world {world}")
+                    return@executes Command.SINGLE_SUCCESS
+                }
+
                 val world = Bukkit.getWorld(worldName) ?: Bukkit.createWorld(WorldCreator(worldName)) ?: return@executes run {
                     player.sendMessagePrefixed("commands.world.errors.failed-to-create", placeholders = mapOf("world" to worldName), default = "<red>Failed to create world {world}")
                     Command.SINGLE_SUCCESS
@@ -71,6 +76,11 @@ private fun generateWorld(player: Player, worldName: String, generator: ChunkGen
         return player.sendMessagePrefixed("commands.world.errors.world-already-exists", placeholders = mapOf("world" to worldName), default = "<red>World {world} already exists")
     }
 
+    if (!hasWorldPermission(player, worldName)) {
+        player.sendMessagePrefixed("commands.world.errors.no-permission", placeholders = mapOf("world" to worldName), default = "<red>You do not have permission to generate world {world}")
+        return
+    }
+
     player.sendMessagePrefixed("commands.world.info.creating", placeholders = mapOf("world" to worldName), default = "<green>Creating world {world}")
 
     val world = Bukkit.createWorld(WorldCreator(worldName).generator(generator)) ?: return player.sendMessagePrefixed("commands.world.errors.failed-to-create", placeholders = mapOf("world" to worldName), default = "<red>Failed to create world {world}")
@@ -103,4 +113,11 @@ private fun addWorldWithGeneratorToBukkitYML(worldName: String, generator: Chunk
     bukkitYml.saveConfig()
 }
 
+private fun hasWorldPermission(player: Player, worldName: String): Boolean {
+    val basePermission = "worldengine.world"
+    val worldPermission = "$basePermission.$worldName"
+    val wildcardPermission = "$basePermission.*"
+    val prefixWildcardPermission = "$basePermission.${worldName.split("-")[0]}-*"
 
+    return player.hasPermission(worldPermission) || player.hasPermission(wildcardPermission) || player.hasPermission(prefixWildcardPermission)
+}
