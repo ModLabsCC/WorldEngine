@@ -9,6 +9,8 @@ commands:
     info:
       teleported: <green>Teleported.
       creating: <green>Creating world <yellow>{world}
+    errors:
+      no-permission: <red>You do not have permission to access world <yellow>{world}
   worldinfo:
     info:
       currentWorld: You are in the world <yellow>{world}

@@ -113,11 +113,18 @@ private fun addWorldWithGeneratorToBukkitYML(worldName: String, generator: Chunk
     bukkitYml.saveConfig()
 }
 
-private fun hasWorldPermission(player: Player, worldName: String): Boolean {
+fun hasWorldPermission(player: Player, worldName: String): Boolean {
     val basePermission = "worldengine.world"
     val worldPermission = "$basePermission.$worldName"
     val wildcardPermission = "$basePermission.*"
-    val prefixWildcardPermission = "$basePermission.${worldName.split("-")[0]}-*"
 
-    return player.hasPermission(worldPermission) || player.hasPermission(wildcardPermission) || player.hasPermission(prefixWildcardPermission)
+    player.effectivePermissions.forEach { perm ->
+        if (!perm.permission.startsWith(basePermission)) return@forEach
+        if (!perm.permission.contains("*")) return@forEach
+        val worldWildcard = perm.permission.substring(basePermission.length + 1)
+        val regex = worldWildcard.replace("*", "[a-zA-Z0-9_-]*")
+        if (worldName.matches(Regex(regex))) return true
+    }
+
+    return player.hasPermission(worldPermission) || player.hasPermission(wildcardPermission)
 }
