@@ -67,6 +67,67 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
                 )
             )
         )
+        .then(Commands.literal("copy")
+            .requires { it.sender.hasPermission("worldengine.world.generate") }
+            .then(Commands.argument<String>("newname", StringArgumentType.word())
+                .executes { context ->
+                    if (context.source.sender !is Player) return@executes 0
+                    val player = context.source.sender as Player
+                    val logger = WorldEngine.instance.logger
+                    logger.info("Executing command `world copy` with argument ${context.getArgument<String>("newname", String::class.java)}")
+
+                    val newName = context.getArgument<String>("newname", String::class.java)
+                    val world = player.world
+
+                    if (testIfWorldExists(newName)) {
+                        player.sendMessagePrefixed("commands.world.errors.world-already-exists", placeholders = mapOf("world" to newName), default = "<red>World {world} already exists")
+                        return@executes Command.SINGLE_SUCCESS
+                    }
+
+                    if (!hasWorldPermission(player, newName)) {
+                        player.sendMessagePrefixed("commands.world.errors.no-permission", placeholders = mapOf("world" to newName), default = "<red>You do not have permission to copy world {world}")
+                        return@executes Command.SINGLE_SUCCESS
+                    }
+
+                    player.sendMessagePrefixed("commands.world.info.copying", placeholders = mapOf("world" to world.name, "newworld" to newName), default = "<green>Copying world {world} to {newworld}")
+
+                    world.save()
+
+                    Bukkit.getScheduler().runTaskLater(WorldEngine.instance, Runnable {
+                        val sourceFolder = world.worldFolder
+                        val destinationFolder = Bukkit.getWorldContainer().resolve(newName)
+                        sourceFolder.copyRecursively(destinationFolder, true)
+
+                        val deleteUid = destinationFolder.resolve("uid.dat").delete()
+                        if (!deleteUid) {
+                            player.sendMessagePrefixed("commands.world.errors.failed-to-delete-uid", placeholders = mapOf("world" to newName), default = "<red>Failed to delete uid.dat - please delete it manually or the world will not load")
+                        }
+
+                        val directoriesOrFilesToDelete = setOf("advancements", "playerdata", "stats", "session.lock", "data/raids.dat")
+                        directoriesOrFilesToDelete.forEach { file ->
+                            val fileToDelete = destinationFolder.resolve(file)
+                            if (fileToDelete.exists()) {
+                                fileToDelete.delete()
+                            }
+                        }
+
+                        copyGeneratorFromBukkitYML(world.name, newName)
+
+                        Bukkit.createWorld(WorldCreator(newName).copy(world))
+
+                        player.sendMessagePrefixed("commands.world.info.copied", placeholders = mapOf("world" to world.name, "newworld" to newName), default = "<green>Copied world {world} to {newworld}! <click:run_command:'/world {newworld}'><color:#1bff0f>Teleport?</color></click>")
+                    }, 20L)
+
+                    Command.SINGLE_SUCCESS
+                }
+            )
+            .executes { context ->
+                if (context.source.sender !is Player) return@executes 0
+                val player = context.source.sender as Player
+                player.sendMessagePrefixed("commands.world.info.copying.help", default = "<yellow>Copy your current world to a new world")
+                return@executes Command.SINGLE_SUCCESS
+            }
+        )
         .build()
 }
 
@@ -109,6 +170,17 @@ private fun addWorldWithGeneratorToBukkitYML(worldName: String, generator: Chunk
     val world = worlds.getConfigurationSection(worldName) ?: worlds.createSection(worldName)
     world["generator"] = WorldEngine.instance.name + ":" + generator.javaClass.name
     worlds[worldName] = world
+    bukkitYml["worlds"] = worlds
+    bukkitYml.saveConfig()
+}
+
+private fun copyGeneratorFromBukkitYML(source: String, newWorldName: String) {
+    val bukkitYml = FileConfig("bukkit.yml", true)
+    val worlds = bukkitYml.getConfigurationSection("worlds") ?: return
+    val world = worlds.getConfigurationSection(source) ?: return
+    val generator = world["generator"]
+    if (generator == null) return
+    worlds[newWorldName] = world
     bukkitYml["worlds"] = worlds
     bukkitYml.saveConfig()
 }

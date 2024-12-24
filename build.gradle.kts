@@ -2,7 +2,7 @@ import java.util.*
 
 plugins {
     kotlin("jvm") version "2.0.0"
-    id("io.papermc.paperweight.userdev") version "1.7.2"
+    id("io.papermc.paperweight.userdev") version "2.0.0-20241223.032535-116"
     kotlin("plugin.serialization") version "2.0.0"
 }
 
