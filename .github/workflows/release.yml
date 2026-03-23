@@ -20,8 +20,15 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Set CalVer version
+        id: calver
+        run: echo "VERSION=$(date -u +'%Y.%-m.%-d.%H%M')" >> $GITHUB_ENV
 
       - name: Build jar
         run: ./gradlew build --no-daemon

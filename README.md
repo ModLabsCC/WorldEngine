@@ -80,13 +80,13 @@ if (world != null) {
 
 ## Dependency (for plugin developers)
 
-WorldEngine is published to ModLabs Nexus `maven-public`.
+WorldEngine is published to ModLabs Nexus.
 
 ### Gradle Kotlin DSL (`build.gradle.kts`)
 
 ```kotlin
 repositories {
-    maven("https://nexus.modlabs.cc/repository/maven-public/")
+    maven("https://nexus.modlabs.cc/repository/maven-mirrors/")
 }
 
 dependencies {
