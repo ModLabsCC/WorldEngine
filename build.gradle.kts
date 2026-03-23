@@ -1,9 +1,14 @@
+import io.papermc.paperweight.userdev.ReobfArtifactConfiguration
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "2.1.10"
-    id("io.papermc.paperweight.userdev") version "2.0.0-SNAPSHOT"
-    kotlin("plugin.serialization") version "2.1.10"
+    kotlin("jvm") version "2.3.20"
+    `java-library`
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.19"
+    kotlin("plugin.serialization") version "2.3.20"
+    id("maven-publish")
 }
 
 val pluginVersion: String by project
@@ -13,8 +18,7 @@ val dailyVersion = Calendar.getInstance(TimeZone.getTimeZone("Europe/Berlin")).r
 }
 
 group = "cc.modlabs.worldengine"
-version = "$pluginVersion-$dailyVersion"
-
+version = System.getenv("VERSION_OVERRIDE") ?: "$pluginVersion-$dailyVersion"
 val minecraftVersion: String by project
 val slf4jVersion: String by project
 
@@ -32,6 +36,7 @@ val mcCoroutineVersion: String by project
 
 repositories {
     maven("https://nexus.modlabs.cc/repository/maven-mirrors/")
+    maven("https://papermc.io/repo/repository/maven-public/")
 }
 
 val deliverDependencies = listOf(
@@ -57,10 +62,14 @@ fun Dependency?.deliver() = this?.apply {
     includedDependencies.add("${group}:${name}:${computedVersion}")
 }
 
+paperweight {
+    reobfArtifactConfiguration = ReobfArtifactConfiguration.MOJANG_PRODUCTION
+}
+
 dependencies {
     paperweight.paperDevBundle("$minecraftVersion-R0.1-SNAPSHOT")
 
-    compileOnly("me.clip:placeholderapi:2.11.6")
+    compileOnly("me.clip:placeholderapi:2.12.2")
 
     implementation(kotlin("stdlib")).deliver()
     implementation(kotlin("reflect")).deliver()
@@ -82,10 +91,69 @@ tasks.register("generateDependenciesFile") {
     }
 }
 
+tasks.register<Jar>("sourcesJar") {
+    description = "Generates the sources jar for this project."
+    group = JavaBasePlugin.DOCUMENTATION_GROUP
+    archiveClassifier.set("sources")
+    from(sourceSets["main"].allSource)
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "ModLabs"
+            url = uri("https://nexus.modlabs.cc/repository/maven-public/")
+            credentials {
+                username = System.getenv("NEXUS_USER")
+                password = System.getenv("NEXUS_PASS")
+            }
+        }
+        mavenLocal()
+    }
+    publications {
+        create<MavenPublication>("maven") {
+            artifact(tasks.named("reobfJar"))
+            artifact(tasks.named("sourcesJar"))
+
+            pom {
+                name.set("WorldEngine")
+                description.set("World management for Paper: worlds, generators, and a small API for other plugins.")
+                url.set("https://github.com/ModLabsCC/WorldEngine")
+                licenses {
+                    license {
+                        name.set("MIT")
+                        url.set("https://github.com/ModLabsCC/WorldEngine/blob/main/LICENSE")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("ModLabsCC")
+                        name.set("ModLabsCC")
+                        email.set("contact@modlabs.cc")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/ModLabsCC/WorldEngine.git")
+                    developerConnection.set("scm:git:git@github.com:ModLabsCC/WorldEngine.git")
+                    url.set("https://github.com/ModLabsCC/WorldEngine")
+                }
+            }
+        }
+    }
+}
 
 tasks {
     build {
         dependsOn(reobfJar)
+    }
+
+    withType<JavaCompile>().configureEach {
+        options.encoding = "UTF-8"
+        options.release.set(21)
+    }
+
+    withType<KotlinCompile>().configureEach {
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
     }
 
     withType<ProcessResources> {
@@ -101,12 +169,6 @@ tasks {
         )
     }
 
-    register<JavaCompile>("compileMain") {
-        source = fileTree("src/main/java")
-        classpath = files(configurations.runtimeClasspath)
-        destinationDirectory.set(file("build/classes/kotlin/main"))
-        options.release.set(21)
-    }
 }
 
 configure<SourceSetContainer> {
@@ -120,9 +182,10 @@ java {
 }
 
 kotlin {
+    jvmToolchain(21)
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+        jvmTarget.set(JvmTarget.JVM_21)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
         freeCompilerArgs.addAll(
             listOf(
                 "-opt-in=kotlin.RequiresOptIn"

@@ -10,11 +10,11 @@ import java.nio.file.FileSystems
 
 class FileConfig(fileName: String, fromRoot: Boolean = false) : YamlConfiguration() {
 
-    private var seperator: String = FileSystems.getDefault().separator ?: "/"
+    private val separator: String = FileSystems.getDefault().separator
     private val path: String = if (fromRoot) {
         fileName
     } else {
-        "plugins${seperator}${WorldEngine.instance.name}$seperator$fileName"
+        "plugins${separator}${WorldEngine.instance.name}$separator$fileName"
     }
 
     fun saveConfig() {
