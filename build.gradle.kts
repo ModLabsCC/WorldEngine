@@ -35,7 +35,7 @@ val gsonVersion: String by project
 val mcCoroutineVersion: String by project
 
 repositories {
-    maven("https://nexus.modlabs.cc/repository/maven-mirrors/")
+    maven("https://repo-api.modlabs.cc/repo/maven/maven-mirror/")
     maven("https://papermc.io/repo/repository/maven-public/")
 }
 
@@ -102,10 +102,10 @@ publishing {
     repositories {
         maven {
             name = "ModLabs"
-            url = uri("https://nexus.modlabs.cc/repository/maven-public/")
+            url = uri("https://repo-api.modlabs.cc/repo/maven/maven-public/")
             credentials {
-                username = System.getenv("NEXUS_USER")
-                password = System.getenv("NEXUS_PASS")
+                username = System.getenv("NEXUS_USER") ?: "modlabs"
+                password = System.getenv("REPO_TOKEN")
             }
         }
         mavenLocal()
