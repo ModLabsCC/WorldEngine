@@ -1,8 +1,8 @@
 package cc.modlabs.worldengine.cache
 
+import cc.modlabs.kpaper.messages.asStyledString
 import cc.modlabs.worldengine.extensions.getLogger
 import cc.modlabs.worldengine.utils.FileConfig
-import dev.fruxz.stacked.extension.asStyledString
 import me.clip.placeholderapi.PlaceholderAPI
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender

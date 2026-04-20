@@ -4,7 +4,6 @@ version: ${version}
 description: "WorldManagement kept ahead of the curve, always planning a step further"
 author: "LiamXSage"
 api-version: "1.21"
-loader: cc.modlabs.worldengine.DependencyLoader
 bootstrapper: cc.modlabs.worldengine.CommandBootstrapper
 load: STARTUP
 

@@ -1,7 +1,6 @@
 package cc.modlabs.worldengine.utils
 
 import cc.modlabs.worldengine.WorldEngine
-import dev.fruxz.ascend.extension.createFileAndDirectories
 import org.bukkit.configuration.InvalidConfigurationException
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
@@ -26,8 +25,10 @@ class FileConfig(fileName: String, fromRoot: Boolean = false) : YamlConfiguratio
     }
 
     init {
-        File(path).createFileAndDirectories()
         val file = File(path)
+        if (!file.parentFile.exists()) {
+            file.parentFile.mkdirs()
+        }
         try {
             if (!file.exists()) {
                 file.createNewFile()
