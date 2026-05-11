@@ -6,6 +6,7 @@ import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
 import org.bukkit.World
 import org.bukkit.WorldCreator
+import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
 import org.bukkit.generator.ChunkGenerator
 import org.bukkit.plugin.Plugin
@@ -17,6 +18,22 @@ object WorldOperations {
     private fun managedPlugin(): Plugin = WorldEngine.instance
 
     private fun managedNamespace(): String = managedPlugin().name.lowercase(Locale.ROOT)
+
+    private fun managedLegacyFolderPrefix(): String = "${managedNamespace()}_"
+
+    /**
+     * Bukkit `worlds:` section uses keys like `worldengine_pinewood`; commands and permissions use the short
+     * dimension key `pinewood` when it is our namespace.
+     */
+    fun preferShortManagedWorldName(sectionOrFolderName: String): String {
+        val prefix = managedLegacyFolderPrefix()
+        if (sectionOrFolderName.length > prefix.length &&
+            sectionOrFolderName.startsWith(prefix, ignoreCase = true)
+        ) {
+            return sectionOrFolderName.substring(prefix.length)
+        }
+        return sectionOrFolderName
+    }
 
     /**
      * Paper 26.1+: [WorldCreator] with a plain string assigns [NamespacedKey.minecraft] keys, which store
@@ -61,10 +78,116 @@ object WorldOperations {
         return dimensions.walkTopDown().maxDepth(8).any { it.isFile && it.name == "level.dat" }
     }
 
+    /**
+     * Dimension / extra-level folders often have no `level.dat` at the folder root (only chunk data).
+     * Paper writes `paper-world.yml` per dimension; treat it as a reliable marker alongside chunk stores.
+     */
+    private fun looksLikeDimensionOrWorldData(dir: File): Boolean {
+        if (!dir.isDirectory) return false
+        if (looksLikeWorldSaveDirectory(dir)) return true
+        if (dir.resolve("paper-world.yml").isFile) return true
+        if (dir.resolve("region").isDirectory) return true
+        if (dir.resolve("entities").isDirectory) return true
+        if (dir.resolve("poi").isDirectory) return true
+        return false
+    }
+
+    /** True if this directory is probably a main level folder we should scan for `dimensions/`. */
+    private fun looksLikeLevelRootForScan(levelRoot: File): Boolean {
+        if (!levelRoot.isDirectory) return false
+        if (looksLikeWorldSaveDirectory(levelRoot)) return true
+        val pluginDims = levelRoot.resolve("dimensions").resolve(managedNamespace())
+        if (pluginDims.isDirectory && !pluginDims.listFiles().isNullOrEmpty()) return true
+        return false
+    }
+
+    /**
+     * Names from disk: top-level level folders and `dimensions/&lt;ns&gt;/&lt;name&gt;` (Paper 26+).
+     */
+    private fun collectDiscoveredWorldNamesFromDisk(): Set<String> {
+        val out = linkedSetOf<String>()
+        val container = Bukkit.getWorldContainer()
+        val pluginPrefix = managedLegacyFolderPrefix()
+
+        fun considerLevelRoot(levelRoot: File) {
+            if (!levelRoot.isDirectory || !looksLikeLevelRootForScan(levelRoot)) return
+            out.add(levelRoot.name)
+            if (levelRoot.name.startsWith(pluginPrefix)) {
+                val short = levelRoot.name.removePrefix(pluginPrefix)
+                if (short.isNotEmpty()) out.add(short)
+            }
+            val dimRoot = levelRoot.resolve("dimensions")
+            if (!dimRoot.isDirectory) return
+            dimRoot.listFiles()?.forEach { namespaceDir ->
+                if (!namespaceDir.isDirectory) return@forEach
+                val isOurNamespace = namespaceDir.name.equals(managedNamespace(), ignoreCase = true)
+                namespaceDir.listFiles()?.forEach { worldDir ->
+                    if (!worldDir.isDirectory) return@forEach
+                    val nonEmpty = !worldDir.listFiles().isNullOrEmpty()
+                    if (looksLikeDimensionOrWorldData(worldDir) || (isOurNamespace && nonEmpty)) {
+                        out.add(worldDir.name)
+                    }
+                }
+            }
+        }
+
+        container.listFiles()?.forEach { considerLevelRoot(it) }
+        return out
+    }
+
+    /**
+     * World names listed under `worlds:` in `bukkit.yml` (server root), including `worldengine_*` keys.
+     */
+    private fun collectWorldNamesFromBukkitYml(): Set<String> {
+        val out = linkedSetOf<String>()
+        val file = File("bukkit.yml")
+        if (!file.isFile) return out
+        val yaml = YamlConfiguration.loadConfiguration(file)
+        val worlds = yaml.getConfigurationSection("worlds") ?: return out
+        val prefix = managedLegacyFolderPrefix()
+        for (key in worlds.getKeys(false)) {
+            if (key.isBlank()) continue
+            out.add(key)
+            if (key.length > prefix.length && key.startsWith(prefix, ignoreCase = true)) {
+                val short = key.substring(prefix.length)
+                if (short.isNotEmpty()) out.add(short)
+            }
+        }
+        return out
+    }
+
+    /**
+     * Union of on-disk discovery and `bukkit.yml` `worlds:` keys (so configured worlds always tab-complete).
+     */
+    fun collectDiscoveredWorldNames(): List<String> {
+        val out = linkedSetOf<String>()
+        out.addAll(collectDiscoveredWorldNamesFromDisk())
+        out.addAll(collectWorldNamesFromBukkitYml())
+        return out.toList()
+    }
+
+    /**
+     * Normalizes a `/world` argument to the canonical name we use elsewhere (permissions, messages).
+     * Returns null if no loaded world and no matching on-disk save was found.
+     */
+    fun canonicalWorldArgument(input: String): String? {
+        resolveWorld(input)?.let { return userFacingWorldName(it) }
+        for (candidate in collectDiscoveredWorldNames()) {
+            if (candidate.equals(input, ignoreCase = true)) {
+                return preferShortManagedWorldName(candidate)
+            }
+        }
+        return null
+    }
+
     fun resolveWorld(name: String): World? {
         Bukkit.getWorld(name)?.let { return it }
         val key = separateLevelKey(managedPlugin(), name)
         Bukkit.getWorld(key)?.let { return it }
+        for (w in Bukkit.getWorlds()) {
+            if (w.name.equals(name, ignoreCase = true)) return w
+            if (userFacingWorldName(w).equals(name, ignoreCase = true)) return w
+        }
         return null
     }
 
@@ -131,6 +254,7 @@ object WorldOperations {
         val basePermission = "worldengine.world"
         val worldPermission = "$basePermission.$worldName"
         val wildcardPermission = "$basePermission.*"
+        val legacySectionPermission = "$basePermission.${managedLegacyFolderPrefix()}$worldName"
 
         player.effectivePermissions.forEach { perm ->
             if (!perm.permission.startsWith(basePermission)) return@forEach
@@ -138,6 +262,14 @@ object WorldOperations {
             val worldWildcard = perm.permission.substring(basePermission.length + 1)
             val regex = worldWildcard.replace("*", "[a-zA-Z0-9_-]*")
             if (worldName.matches(Regex(regex))) return true
+            val legacyKey = "${managedLegacyFolderPrefix()}$worldName"
+            if (legacyKey.matches(Regex(regex))) return true
+        }
+
+        if (!worldName.startsWith(managedLegacyFolderPrefix(), ignoreCase = true) &&
+            player.hasPermission(legacySectionPermission)
+        ) {
+            return true
         }
 
         return player.hasPermission(worldPermission) || player.hasPermission(wildcardPermission)
