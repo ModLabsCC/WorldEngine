@@ -1,6 +1,7 @@
 package cc.modlabs.worldengine.commands
 
 import cc.modlabs.worldengine.extensions.sendMessagePrefixed
+import cc.modlabs.worldengine.world.WorldOperations
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.tree.LiteralCommandNode
 import io.papermc.paper.command.brigadier.CommandSourceStack
@@ -14,7 +15,7 @@ fun createWorldInfoCommand(): LiteralCommandNode<CommandSourceStack> {
             val sender = ctx.source.sender
             if (sender !is Player) return@executes Command.SINGLE_SUCCESS
 
-            sender.sendMessagePrefixed("commands.worldinfo.info.currentWorld", mapOf("world" to sender.world.name), default = "You are in the world {world}")
+            sender.sendMessagePrefixed("commands.worldinfo.info.currentWorld", mapOf("world" to WorldOperations.userFacingWorldName(sender.world)), default = "You are in the world {world}")
 
 
             return@executes Command.SINGLE_SUCCESS

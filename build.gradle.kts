@@ -6,8 +6,8 @@ import java.util.*
 plugins {
     kotlin("jvm") version "2.3.20"
     `java-library`
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.19"
-    id("cc.modlabs.kpaper-gradle") version "2026.3.30.1428+kpaper.2026.3.30.1427"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
+    id("cc.modlabs.kpaper-gradle") version "2026.5.7.1102+kpaper.2026.5.7.1101"
     kotlin("plugin.serialization") version "2.3.20"
     id("maven-publish")
 }
@@ -42,13 +42,13 @@ paperweight {
 }
 
 dependencies {
-    paperweight.paperDevBundle("$minecraftVersion-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("$minecraftVersion.build.+")
 
     compileOnly("me.clip:placeholderapi:2.12.2")
 }
 
 kpaper {
-    javaVersion.set(21)
+    javaVersion.set(25)
     registrationBasePackage.set("cc.modlabs.worldengine")
 
     deliver (
@@ -118,11 +118,11 @@ publishing {
 tasks {
     withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
-        options.release.set(21)
+        options.release.set(25)
     }
 
     withType<KotlinCompile>().configureEach {
-        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
     }
 
     withType<ProcessResources> {
@@ -147,13 +147,13 @@ configure<SourceSetContainer> {
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_21)
+        jvmTarget.set(JvmTarget.JVM_25)
         apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
         freeCompilerArgs.addAll(
             listOf(

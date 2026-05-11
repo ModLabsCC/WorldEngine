@@ -38,7 +38,7 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
 
                 logger.info("Found world $worldName - teleporting player")
                 WorldOperations.teleportToWorldSpawn(player, world)
-                player.sendMessagePrefixed("commands.world.info.teleported", placeholders = mapOf("world" to world.name), default = "<green>Teleported to world {world}")
+                player.sendMessagePrefixed("commands.world.info.teleported", placeholders = mapOf("world" to WorldOperations.userFacingWorldName(world)), default = "<green>Teleported to world {world}")
                 Command.SINGLE_SUCCESS
             }
         )
@@ -88,16 +88,16 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
                         return@executes Command.SINGLE_SUCCESS
                     }
 
-                    player.sendMessagePrefixed("commands.world.info.copying", placeholders = mapOf("world" to world.name, "newworld" to newName), default = "<green>Copying world {world} to {newworld}")
+                    player.sendMessagePrefixed("commands.world.info.copying", placeholders = mapOf("world" to WorldOperations.userFacingWorldName(world), "newworld" to newName), default = "<green>Copying world {world} to {newworld}")
 
-                    val destinationFolder = Bukkit.getWorldContainer().resolve(newName)
+                    val destinationFolder = WorldOperations.levelRootDirectoryForUserWorldName(newName)
                     WorldOperations.scheduleWorldCopy(WorldEngine.instance, world, newName) { result ->
                         if (destinationFolder.resolve("uid.dat").exists()) {
                             player.sendMessagePrefixed("commands.world.errors.failed-to-delete-uid", placeholders = mapOf("world" to newName), default = "<red>Failed to delete uid.dat - please delete it manually or the world will not load")
                         }
                         result.fold(
                             onSuccess = {
-                                player.sendMessagePrefixed("commands.world.info.copied", placeholders = mapOf("world" to world.name, "newworld" to newName), default = "<green>Copied world {world} to {newworld}! <click:run_command:'/world {newworld}'><color:#1bff0f>Teleport?</color></click>")
+                                player.sendMessagePrefixed("commands.world.info.copied", placeholders = mapOf("world" to WorldOperations.userFacingWorldName(world), "newworld" to newName), default = "<green>Copied world {world} to {newworld}! <click:run_command:'/world {newworld}'><color:#1bff0f>Teleport?</color></click>")
                             },
                             onFailure = {
                                 logger.warning("World copy failed: ${it.message}")
@@ -144,6 +144,6 @@ private fun generateWorld(player: Player, worldName: String, generator: ChunkGen
 
     Bukkit.getScheduler().runTaskLater(WorldEngine.instance, Runnable {
         WorldOperations.teleportToWorldSpawn(player, world)
-        player.sendMessagePrefixed("commands.world.info.teleported", placeholders = mapOf("world" to world.name), default = "<green>Teleported to world {world}")
+        player.sendMessagePrefixed("commands.world.info.teleported", placeholders = mapOf("world" to WorldOperations.userFacingWorldName(world)), default = "<green>Teleported to world {world}")
     }, 1L)
 }

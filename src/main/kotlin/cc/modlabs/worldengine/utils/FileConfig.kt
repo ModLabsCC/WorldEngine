@@ -26,9 +26,7 @@ class FileConfig(fileName: String, fromRoot: Boolean = false) : YamlConfiguratio
 
     init {
         val file = File(path)
-        if (!file.parentFile.exists()) {
-            file.parentFile.mkdirs()
-        }
+        file.parentFile?.takeUnless { it.exists() }?.mkdirs()
         try {
             if (!file.exists()) {
                 file.createNewFile()

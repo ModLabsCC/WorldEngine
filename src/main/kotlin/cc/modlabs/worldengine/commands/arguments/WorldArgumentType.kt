@@ -1,5 +1,6 @@
 package cc.modlabs.worldengine.commands.arguments
 
+import cc.modlabs.worldengine.WorldEngine
 import cc.modlabs.worldengine.world.WorldOperations
 import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -13,6 +14,7 @@ import io.papermc.paper.command.brigadier.MessageComponentSerializer
 import io.papermc.paper.command.brigadier.argument.CustomArgumentType
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
+import java.util.Locale
 import java.util.concurrent.CompletableFuture
 
 class WorldArgumentType : CustomArgumentType.Converted<String, String> {
@@ -53,7 +55,10 @@ class WorldArgumentType : CustomArgumentType.Converted<String, String> {
     private fun getAllBukkitWorlds(): List<String> {
         val worlds = mutableListOf<String>()
         for (world in Bukkit.getWorlds()) {
-            worlds.add(world.name)
+            worlds.add(WorldOperations.userFacingWorldName(world))
+            if (WorldOperations.isManagedSeparateLevel(world)) {
+                worlds.add(world.name)
+            }
         }
         worlds.addAll(getAllFolderWorlds())
         return worlds.distinct()
@@ -61,10 +66,16 @@ class WorldArgumentType : CustomArgumentType.Converted<String, String> {
 
     private fun getAllFolderWorlds(): MutableList<String> {
         val worlds = mutableListOf<String>()
-        val worldFolder = Bukkit.getWorldContainer()
-        for (world in worldFolder.listFiles()!!) {
-            if (world.isDirectory && world.listFiles()?.any { it.name == "level.dat" } == true) {
-                worlds.add(world.name)
+        val container = Bukkit.getWorldContainer()
+        val entries = container.listFiles() ?: return worlds
+        val pluginPrefix = WorldEngine.instance.name.lowercase(Locale.ROOT) + "_"
+        for (dir in entries) {
+            if (dir.isDirectory && WorldOperations.looksLikeWorldSaveDirectory(dir)) {
+                worlds.add(dir.name)
+                if (dir.name.startsWith(pluginPrefix)) {
+                    val short = dir.name.removePrefix(pluginPrefix)
+                    if (short.isNotEmpty()) worlds.add(short)
+                }
             }
         }
         return worlds
