@@ -22,8 +22,6 @@ class WorldEngineTest {
         val resolved = ChunkGenerators.resolveForWorld("flat", "worldengine_plots")
 
         assertTrue(resolved.configSpec.startsWith("WorldEngine:"))
-        assertTrue(worldEngineGenerator("") === ChunkGenerators.presets["flat"])
-        assertTrue(worldEngineGenerator("empty") === ChunkGenerators.presets["empty"])
         assertEquals("PlotSquared", generatorConfigSpec("PlotSquared", null))
         assertEquals("PlotSquared:single", generatorConfigSpec("PlotSquared", "single"))
         assertEquals("PlotSquared", ChunkGeneratorArgumentType().convert("PlotSquared"))

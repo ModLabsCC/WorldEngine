@@ -24,18 +24,11 @@
 
 Jenkins builds with the jdk25 tool and exposes the successful JAR as a downloadable build artifact.
 
-## PlotSquared generator
+## PlotSquared compatibility
 
-With PlotSquared installed, WorldEngine is available in the generator list shown by /plot setup. Its default is the built-in flat generator.
+Use PlotSquared's normal `/plot setup` workflow and keep `PlotSquared` selected as the generator. PlotSquared creates the Bukkit world; WorldEngine discovers the loaded world automatically and manages it through `/world <name>` and the WorldEngine API.
 
-You can also create a plot world directly with:
-
-```text
-/world generate plots PlotSquared
-```
-
-Generator ids such as `PlotSquared:single` are also supported. WorldEngine stores the original PlotSquared generator specification in `bukkit.yml` so it survives restarts.
-
+WorldEngine intentionally does not register itself as a `/plot setup` generator.
 ## API usage
 
 WorldEngine exposes a small Bukkit service API for other plugins:
