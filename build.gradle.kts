@@ -1,14 +1,11 @@
-import io.papermc.paperweight.userdev.ReobfArtifactConfiguration
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "2.3.20"
+    kotlin("jvm") version "2.4.10"
     `java-library`
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
-    id("cc.modlabs.kpaper-gradle") version "2026.5.7.1102+kpaper.2026.5.7.1101"
-    kotlin("plugin.serialization") version "2.3.20"
+    id("io.papermc.paperweight.userdev") version "2.0.0-SNAPSHOT"
+    id("cc.modlabs.kpaper-gradle") version "2026.7.18.0717+kpaper.2026.7.18.0716"
     id("maven-publish")
 }
 
@@ -34,17 +31,15 @@ val mcCoroutineVersion: String by project
 
 repositories {
     maven("https://repo-api.modlabs.cc/repo/maven/maven-mirror/")
-    maven("https://papermc.io/repo/repository/maven-public/")
+    maven("https://repo.papermc.io/repository/maven-public/")
 }
 
-paperweight {
-    reobfArtifactConfiguration = ReobfArtifactConfiguration.MOJANG_PRODUCTION
-}
 
 dependencies {
-    paperweight.paperDevBundle("$minecraftVersion.build.+")
+    paperweight.paperDevBundle("$minecraftVersion.build.60-beta")
 
     compileOnly("me.clip:placeholderapi:2.12.2")
+    testImplementation(kotlin("test"))
 }
 
 kpaper {
@@ -116,15 +111,6 @@ publishing {
 }
 
 tasks {
-    withType<JavaCompile>().configureEach {
-        options.encoding = "UTF-8"
-        options.release.set(25)
-    }
-
-    withType<KotlinCompile>().configureEach {
-        compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
-    }
-
     withType<ProcessResources> {
         dependsOn("generateDependenciesFile")
 
@@ -146,19 +132,9 @@ configure<SourceSetContainer> {
     }
 }
 
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
-}
-
 kotlin {
-    jvmToolchain(25)
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_25)
-        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
-        freeCompilerArgs.addAll(
-            listOf(
-                "-opt-in=kotlin.RequiresOptIn"
-            )
-        )
+        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }

@@ -4,25 +4,24 @@ import cc.modlabs.kpaper.messages.asStyledString
 import cc.modlabs.worldengine.extensions.getLogger
 import cc.modlabs.worldengine.utils.FileConfig
 import me.clip.placeholderapi.PlaceholderAPI
+import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 object MessageCache {
 
-    private val cacheLock: ReadWriteLock = ReentrantReadWriteLock()
+    private val cacheLock = ReentrantReadWriteLock()
     private var cache: Map<String, String> = mapOf()
 
     fun getMessage(key: String, commandSender: CommandSender = Bukkit.getConsoleSender(), placeholders: Map<String, Any> = emptyMap<String, String>(), default: String = key): String {
-        cacheLock.readLock().lock()
-        var message = cache[key]
-        cacheLock.readLock().unlock()
-        message = message ?: createMessage(key, default)
+        var message = cacheLock.read { cache[key] } ?: createMessage(key, default)
 
         for ((placeholder, value) in placeholders) {
-            message = message!!.replace("{$placeholder}", value.toString())
+            message = message.replace("{$placeholder}", MiniMessage.miniMessage().escapeTags(value.toString()))
         }
         message = commandSender.replaceSenderPlaceholders(message)
 
@@ -45,18 +44,13 @@ object MessageCache {
         messagesFile[key] = default
         messagesFile.saveConfig()
 
-        cacheLock.writeLock().lock()
-        cache = cache.plus(key to default)
-        cacheLock.writeLock().unlock()
+        cacheLock.write { cache = cache.plus(key to default) }
 
         getLogger().info("Created message $key with default value $default")
         return default
     }
 
     fun loadCache() {
-        cacheLock.writeLock().lock()
-        cache = mapOf()
-
         val tempCache = mutableMapOf<String, String>()
         val messages = FileConfig("messages.yml")
         messages.getKeys(true).forEach {
@@ -64,8 +58,7 @@ object MessageCache {
             tempCache[it] = message
         }
 
-        cache = tempCache
-        cacheLock.writeLock().unlock()
+        cacheLock.write { cache = tempCache }
     }
 
     private fun CommandSender.replaceSenderPlaceholders(inputMessage: String): String {

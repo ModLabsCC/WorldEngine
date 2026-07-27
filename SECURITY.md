@@ -11,4 +11,4 @@ We release patches for security vulnerabilities. Which versions are eligible for
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please raise an issue on GitHub. Include as much information as possible to help us resolve the issue quickly. You can also contact us directly at security@modlabs.cc.
+Please do not open a public issue for vulnerabilities. Report them privately through GitHub Security Advisories or email security@modlabs.cc with reproduction steps and impact details.

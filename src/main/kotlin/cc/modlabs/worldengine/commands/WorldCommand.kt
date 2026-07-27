@@ -5,6 +5,7 @@ import cc.modlabs.worldengine.commands.arguments.ChunkGeneratorArgumentType
 import cc.modlabs.worldengine.commands.arguments.WorldArgumentType
 import cc.modlabs.worldengine.extensions.sendMessagePrefixed
 import cc.modlabs.worldengine.world.WorldOperations
+import cc.modlabs.worldengine.world.isValidWorldName
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.tree.LiteralCommandNode
@@ -78,7 +79,12 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
                     val newName = context.getArgument<String>("newname", String::class.java)
                     val world = player.world
 
-                    if (WorldOperations.isWorldLoaded(newName)) {
+                    if (!isValidWorldName(newName)) {
+                        player.sendMessagePrefixed("commands.world.errors.invalid-name", placeholders = mapOf("world" to newName), default = "<red>Invalid world name {world}. Use letters, numbers, dots, dashes, or underscores.")
+                        return@executes Command.SINGLE_SUCCESS
+                    }
+
+                    if (WorldOperations.worldExists(newName)) {
                         player.sendMessagePrefixed("commands.world.errors.world-already-exists", placeholders = mapOf("world" to newName), default = "<red>World {world} already exists")
                         return@executes Command.SINGLE_SUCCESS
                     }
@@ -103,8 +109,7 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
                                 logger.warning("World copy failed: ${it.message}")
                                 player.sendMessagePrefixed(
                                     "commands.world.errors.copy-failed",
-                                    placeholders = mapOf("reason" to (it.message ?: "unknown")),
-                                    default = "<red>World copy failed: {reason}"
+                                    default = "<red>World copy failed. Check the server log for details."
                                 )
                             }
                         )
@@ -116,7 +121,7 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
             .executes { context ->
                 if (context.source.sender !is Player) return@executes 0
                 val player = context.source.sender as Player
-                player.sendMessagePrefixed("commands.world.info.copying.help", default = "<yellow>Copy your current world to a new world")
+                player.sendMessagePrefixed("commands.world.info.copy-help", default = "<yellow>Copy your current world to a new world")
                 return@executes Command.SINGLE_SUCCESS
             }
         )
@@ -124,7 +129,11 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
 }
 
 private fun generateWorld(player: Player, worldName: String, generator: ChunkGenerator? = null) {
-    if (WorldOperations.isWorldLoaded(worldName)) {
+    if (!isValidWorldName(worldName)) {
+        return player.sendMessagePrefixed("commands.world.errors.invalid-name", placeholders = mapOf("world" to worldName), default = "<red>Invalid world name {world}. Use letters, numbers, dots, dashes, or underscores.")
+    }
+
+    if (WorldOperations.worldExists(worldName)) {
         return player.sendMessagePrefixed("commands.world.errors.world-already-exists", placeholders = mapOf("world" to worldName), default = "<red>World {world} already exists")
     }
 

@@ -16,6 +16,14 @@
   </p>
 </div>
 
+## Compatibility
+
+- Paper 26.2
+- Java 25
+- KPaper lifecycle with all optional KPaper features disabled
+
+Jenkins builds with the jdk25 tool and exposes the successful JAR as a downloadable build artifact.
+
 ## API usage
 
 WorldEngine exposes a small Bukkit service API for other plugins:
@@ -86,7 +94,7 @@ WorldEngine is published to ModLabs Nexus.
 
 ```kotlin
 repositories {
-    maven("https://nexus.modlabs.cc/repository/maven-mirrors/")
+    maven("https://repo-api.modlabs.cc/repo/maven/maven-mirror/")
 }
 
 dependencies {

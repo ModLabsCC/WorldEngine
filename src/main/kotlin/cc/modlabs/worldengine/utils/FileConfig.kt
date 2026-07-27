@@ -1,10 +1,8 @@
 package cc.modlabs.worldengine.utils
 
 import cc.modlabs.worldengine.WorldEngine
-import org.bukkit.configuration.InvalidConfigurationException
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
-import java.io.IOException
 import java.nio.file.FileSystems
 
 class FileConfig(fileName: String, fromRoot: Boolean = false) : YamlConfiguration() {
@@ -19,24 +17,19 @@ class FileConfig(fileName: String, fromRoot: Boolean = false) : YamlConfiguratio
     fun saveConfig() {
         try {
             save(path)
-        } catch (e: IOException) {
-            e.printStackTrace()
+        } catch (e: Exception) {
+            throw IllegalStateException("Could not save $path", e)
         }
     }
 
     init {
         val file = File(path)
-        file.parentFile?.takeUnless { it.exists() }?.mkdirs()
         try {
-            if (!file.exists()) {
-                file.createNewFile()
-            }
-            load(path)
-        } catch (_: IOException) {
-            // Do nothing
-        } catch (e: InvalidConfigurationException) {
-            e.printStackTrace()
+            file.parentFile?.mkdirs()
+            if (!file.exists()) file.createNewFile()
+            load(file)
+        } catch (e: Exception) {
+            throw IllegalStateException("Could not load $path", e)
         }
     }
-
 }

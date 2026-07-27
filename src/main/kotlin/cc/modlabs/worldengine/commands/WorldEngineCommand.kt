@@ -14,9 +14,9 @@ fun createWorldEngineCommand(): LiteralCommandNode<CommandSourceStack> {
             .executes { ctx ->
                 val sender = ctx.source.sender
 
-                sender.sendMessagePrefixed("<yellow>Reloading config...")
+                sender.sendMessagePrefixed("commands.worldengine.info.reloading", default = "<yellow>Reloading messages...")
                 MessageCache.loadCache()
-                sender.sendMessagePrefixed("<green>Config reloaded!")
+                sender.sendMessagePrefixed("commands.worldengine.info.reloaded", default = "<green>Messages reloaded!")
 
                 return@executes Command.SINGLE_SUCCESS
             }

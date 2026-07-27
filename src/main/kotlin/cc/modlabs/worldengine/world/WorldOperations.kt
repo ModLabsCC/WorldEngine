@@ -11,7 +11,20 @@ import org.bukkit.entity.Player
 import org.bukkit.generator.ChunkGenerator
 import org.bukkit.plugin.Plugin
 import java.io.File
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.Locale
+
+private val validWorldName = Regex("[A-Za-z0-9._-]{1,64}")
+
+internal fun isValidWorldName(name: String): Boolean =
+    name != "." && name != ".." && validWorldName.matches(name)
+
+internal fun matchesWorldPermission(pattern: String, worldName: String): Boolean {
+    val regex = pattern.split('*').joinToString("[A-Za-z0-9._-]*") { Regex.escape(it) }
+    return Regex(regex, RegexOption.IGNORE_CASE).matches(worldName)
+}
 
 object WorldOperations {
 
@@ -193,6 +206,9 @@ object WorldOperations {
 
     fun isWorldLoaded(name: String): Boolean = resolveWorld(name) != null
 
+    fun worldExists(name: String): Boolean =
+        resolveWorld(name) != null || levelRootDirectoryForUserWorldName(name).exists()
+
     fun getWorld(name: String): World? = resolveWorld(name)
 
     fun getOrLoadWorld(name: String): World? {
@@ -212,6 +228,7 @@ object WorldOperations {
     }
 
     fun createWorld(name: String, generator: ChunkGenerator? = null): World? {
+        require(isValidWorldName(name)) { "Invalid world name '$name'" }
         val key = separateLevelKey(managedPlugin(), name)
         val creator = WorldCreator.ofKey(key).generator(generator)
         return Bukkit.createWorld(creator)
@@ -257,13 +274,12 @@ object WorldOperations {
         val legacySectionPermission = "$basePermission.${managedLegacyFolderPrefix()}$worldName"
 
         player.effectivePermissions.forEach { perm ->
-            if (!perm.permission.startsWith(basePermission)) return@forEach
-            if (!perm.permission.contains("*")) return@forEach
+            if (!perm.value || !perm.permission.startsWith("$basePermission.")) return@forEach
             val worldWildcard = perm.permission.substring(basePermission.length + 1)
-            val regex = worldWildcard.replace("*", "[a-zA-Z0-9_-]*")
-            if (worldName.matches(Regex(regex))) return true
+            if (!worldWildcard.contains('*')) return@forEach
+            if (matchesWorldPermission(worldWildcard, worldName)) return true
             val legacyKey = "${managedLegacyFolderPrefix()}$worldName"
-            if (legacyKey.matches(Regex(regex))) return true
+            if (matchesWorldPermission(worldWildcard, legacyKey)) return true
         }
 
         if (!worldName.startsWith(managedLegacyFolderPrefix(), ignoreCase = true) &&
@@ -285,31 +301,56 @@ object WorldOperations {
         newName: String,
         callback: (Result<World>) -> Unit
     ) {
+        if (!isValidWorldName(newName)) {
+            callback(Result.failure(IllegalArgumentException("Invalid world name '$newName'")))
+            return
+        }
+
+        val key = separateLevelKey(plugin, newName)
+        val container = Bukkit.getWorldContainer()
+        val destination = container.resolve(key.toLegacyBukkitLevelFolderName())
+        if (destination.exists()) {
+            callback(Result.failure(IllegalStateException("World '$newName' already exists on disk")))
+            return
+        }
+
         sourceWorld.save()
-        Bukkit.getScheduler().runTaskLater(
-            plugin,
-            Runnable {
+        val sourceFolder = sourceWorld.worldFolder
+        // ponytail: this is a live-world copy; unload or snapshot first if point-in-time consistency becomes required.
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, Runnable {
+            val copied = runCatching {
+                val temporary = Files.createTempDirectory(container.toPath(), ".worldengine-copy-").toFile()
                 try {
-                    val sourceFolder = sourceWorld.worldFolder
-                    val key = separateLevelKey(plugin, newName)
-                    val destinationFolder = Bukkit.getWorldContainer().resolve(key.toLegacyBukkitLevelFolderName())
-                    sourceFolder.copyRecursively(destinationFolder, true)
-                    destinationFolder.resolve("uid.dat").delete()
+                    check(sourceFolder.copyRecursively(temporary, true)) { "Failed to copy world '$newName'" }
+                    val uid = temporary.resolve("uid.dat")
+                    check(!uid.exists() || uid.delete()) { "Failed to remove uid.dat" }
                     copyCleanupRelativePaths.forEach { relative ->
-                        destinationFolder.resolve(relative).takeIf { it.exists() }?.delete()
+                        val path = temporary.resolve(relative)
+                        check(!path.exists() || path.deleteRecursively()) { "Failed to remove $relative" }
                     }
-                    copyWorldGeneratorConfig(sourceWorld.name, newName)
-                    val created = Bukkit.createWorld(WorldCreator.ofKey(key).copy(sourceWorld))
-                    if (created == null) {
-                        callback(Result.failure(IllegalStateException("Failed to load copied world '$newName'")))
-                    } else {
-                        callback(Result.success(created))
+                    try {
+                        Files.move(temporary.toPath(), destination.toPath(), StandardCopyOption.ATOMIC_MOVE)
+                    } catch (_: AtomicMoveNotSupportedException) {
+                        Files.move(temporary.toPath(), destination.toPath())
                     }
-                } catch (t: Throwable) {
-                    callback(Result.failure(t))
+                } finally {
+                    temporary.deleteRecursively()
                 }
-            },
-            20L
-        )
+            }
+
+            Bukkit.getScheduler().runTask(plugin, Runnable {
+                copied.fold(
+                    onSuccess = {
+                        copyWorldGeneratorConfig(sourceWorld.name, newName)
+                        val created = Bukkit.createWorld(WorldCreator.ofKey(key).copy(sourceWorld))
+                        callback(
+                            if (created == null) Result.failure(IllegalStateException("Failed to load copied world '$newName'"))
+                            else Result.success(created)
+                        )
+                    },
+                    onFailure = { callback(Result.failure(it)) }
+                )
+            })
+        })
     }
 }

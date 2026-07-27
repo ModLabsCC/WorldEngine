@@ -1,17 +1,25 @@
-
-
 general:
   prefix: "<gradient:#4a69bd:#6a89cc>WorldEngine</gradient> <color:#4a628f>>></color> <color:#b2c2d4>"
-
 
 commands:
   world:
     info:
-      teleported: <green>Teleported.
-      creating: <green>Creating world <yellow>{world}
+      teleported: "<green>Teleported to world <yellow>{world}<green>."
+      creating: "<green>Creating world <yellow>{world}<green>..."
+      copying: "<green>Copying world <yellow>{world}</yellow> to <yellow>{newworld}<green>..."
+      copied: "<green>Copied world <yellow>{world}</yellow> to <yellow>{newworld}<green>! <click:run_command:'/world {newworld}'><yellow>Teleport?</yellow></click>"
+      copy-help: "<yellow>Usage: /world copy [new-name]"
     errors:
-      no-permission: <red>You do not have permission to access world <yellow>{world}
+      no-permission: "<red>You do not have permission to access world <yellow>{world}<red>."
+      invalid-name: "<red>Invalid world name <yellow>{world}<red>. Use letters, numbers, dots, dashes, or underscores."
+      world-already-exists: "<red>World <yellow>{world}</yellow> already exists."
+      failed-to-create: "<red>Failed to create world <yellow>{world}<red>."
+      failed-to-delete-uid: "<red>Failed to prepare world <yellow>{world}<red>. Check the server log."
+      copy-failed: "<red>World copy failed. Check the server log for details."
+  worldengine:
+    info:
+      reloading: "<yellow>Reloading messages..."
+      reloaded: "<green>Messages reloaded!"
   worldinfo:
     info:
-      currentWorld: You are in the world <yellow>{world}
-
+      currentWorld: "You are in world <yellow>{world}<color:#b2c2d4>."
