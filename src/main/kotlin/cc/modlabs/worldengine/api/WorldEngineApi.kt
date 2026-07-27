@@ -1,6 +1,7 @@
 package cc.modlabs.worldengine.api
 
 import cc.modlabs.worldengine.world.ChunkGenerators
+import cc.modlabs.worldengine.world.WorldOperations
 import org.bukkit.World
 import org.bukkit.entity.Player
 import org.bukkit.generator.ChunkGenerator
@@ -53,4 +54,8 @@ interface WorldEngineApi {
 
     /** Parse preset id or `PluginName:id` like the `/world generate` argument. */
     fun resolveChunkGenerator(spec: String): ChunkGenerator = ChunkGenerators.resolve(spec)
+
+    /** Resolve a generator that needs the final target world name, such as PlotSquared. */
+    fun resolveChunkGenerator(spec: String, worldName: String): ChunkGenerator =
+        ChunkGenerators.resolve(spec, WorldOperations.levelRootDirectoryForUserWorldName(worldName).name)
 }

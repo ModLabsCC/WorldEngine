@@ -14,6 +14,7 @@ commands:
       invalid-name: "<red>Invalid world name <yellow>{world}<red>. Use letters, numbers, dots, dashes, or underscores."
       world-already-exists: "<red>World <yellow>{world}</yellow> already exists."
       failed-to-create: "<red>Failed to create world <yellow>{world}<red>."
+      invalid-generator: "<red>Could not use generator <yellow>{generator}<red>. Check the server log."
       failed-to-delete-uid: "<red>Failed to prepare world <yellow>{world}<red>. Check the server log."
       copy-failed: "<red>World copy failed. Check the server log for details."
   worldengine:

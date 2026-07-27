@@ -239,16 +239,19 @@ object WorldOperations {
             ?: separateLevelKey(managedPlugin(), userFacingWorldName).toLegacyBukkitLevelFolderName()
 
     fun registerGeneratorInBukkitConfig(worldName: String, generator: ChunkGenerator) {
+        registerGeneratorInBukkitConfig(worldName, WorldEngine.instance.name + ":" + generator.javaClass.name)
+    }
+
+    fun registerGeneratorInBukkitConfig(worldName: String, generatorSpec: String) {
         val bukkitYml = FileConfig("bukkit.yml", true)
         val worlds = bukkitYml.getConfigurationSection("worlds") ?: bukkitYml.createSection("worlds")
         val sectionKey = legacyBukkitConfigSectionKey(worldName)
         val world = worlds.getConfigurationSection(sectionKey) ?: worlds.createSection(sectionKey)
-        world["generator"] = WorldEngine.instance.name + ":" + generator.javaClass.name
+        world["generator"] = generatorSpec
         worlds[sectionKey] = world
         bukkitYml["worlds"] = worlds
         bukkitYml.saveConfig()
     }
-
     fun copyWorldGeneratorConfig(sourceWorldName: String, newWorldName: String) {
         val bukkitYml = FileConfig("bukkit.yml", true)
         val worlds = bukkitYml.getConfigurationSection("worlds") ?: return

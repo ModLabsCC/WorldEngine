@@ -3,6 +3,7 @@ package cc.modlabs.worldengine
 import cc.modlabs.worldengine.api.DefaultWorldEngineApi
 import cc.modlabs.worldengine.api.WorldEngineApi
 import cc.modlabs.worldengine.cache.MessageCache
+import cc.modlabs.worldengine.world.ChunkGenerators
 import cc.modlabs.kpaper.main.Feature
 import cc.modlabs.kpaper.main.KPlugin
 import cc.modlabs.kpaper.main.featureConfig
@@ -14,6 +15,9 @@ import kotlin.system.measureTimeMillis
 internal fun disabledKPaperFeatures() = featureConfig {
     Feature.entries.forEach { feature(it, false) }
 }
+
+internal fun worldEngineGenerator(id: String?): ChunkGenerator? =
+    ChunkGenerators.presets[(id?.takeIf { it.isNotBlank() } ?: "flat").lowercase()]
 
 class WorldEngine : KPlugin() {
 
@@ -58,7 +62,8 @@ class WorldEngine : KPlugin() {
     }
 
     override fun getDefaultWorldGenerator(worldName: String, id: String?): ChunkGenerator? {
-        if (id == null) return null
+        worldEngineGenerator(id)?.let { return it }
+        if (id.isNullOrBlank()) return null
         val clazz = Class.forName(id, false, javaClass.classLoader).asSubclass(ChunkGenerator::class.java)
         return clazz.getDeclaredConstructor().newInstance()
     }

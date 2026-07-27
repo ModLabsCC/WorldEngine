@@ -4,6 +4,7 @@ import cc.modlabs.worldengine.WorldEngine
 import cc.modlabs.worldengine.commands.arguments.ChunkGeneratorArgumentType
 import cc.modlabs.worldengine.commands.arguments.WorldArgumentType
 import cc.modlabs.worldengine.extensions.sendMessagePrefixed
+import cc.modlabs.worldengine.world.ChunkGenerators
 import cc.modlabs.worldengine.world.WorldOperations
 import cc.modlabs.worldengine.world.isValidWorldName
 import com.mojang.brigadier.Command
@@ -13,7 +14,6 @@ import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
-import org.bukkit.generator.ChunkGenerator
 
 fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
     return Commands.literal("world")
@@ -54,14 +54,14 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
                     generateWorld(player, worldName)
                     Command.SINGLE_SUCCESS
                 }
-                .then(Commands.argument<ChunkGenerator>("preset", ChunkGeneratorArgumentType())
+                .then(Commands.argument<String>("preset", ChunkGeneratorArgumentType())
                     .executes { context ->
                         if (context.source.sender !is Player) return@executes 0
                         val player = context.source.sender as Player
 
                         val worldName = context.getArgument<String>("world", String::class.java)
-                        val generator = context.getArgument<ChunkGenerator>("preset", ChunkGenerator::class.java)
-                        generateWorld(player, worldName, generator)
+                        val generatorSpec = context.getArgument<String>("preset", String::class.java)
+                        generateWorld(player, worldName, generatorSpec)
                         Command.SINGLE_SUCCESS
                     }
                 )
@@ -128,7 +128,7 @@ fun createWorldCommand(): LiteralCommandNode<CommandSourceStack> {
         .build()
 }
 
-private fun generateWorld(player: Player, worldName: String, generator: ChunkGenerator? = null) {
+private fun generateWorld(player: Player, worldName: String, generatorSpec: String? = null) {
     if (!isValidWorldName(worldName)) {
         return player.sendMessagePrefixed("commands.world.errors.invalid-name", placeholders = mapOf("world" to worldName), default = "<red>Invalid world name {world}. Use letters, numbers, dots, dashes, or underscores.")
     }
@@ -142,14 +142,27 @@ private fun generateWorld(player: Player, worldName: String, generator: ChunkGen
         return
     }
 
+    val resolved = generatorSpec?.let { spec ->
+        runCatching {
+            val bukkitWorldName = WorldOperations.levelRootDirectoryForUserWorldName(worldName).name
+            ChunkGenerators.resolveForWorld(spec, bukkitWorldName)
+        }.getOrElse {
+            WorldEngine.instance.logger.warning("Could not resolve generator '$spec' for '$worldName': ${it.message}")
+            player.sendMessagePrefixed(
+                "commands.world.errors.invalid-generator",
+                placeholders = mapOf("generator" to spec),
+                default = "<red>Could not use generator {generator}. Check the server log."
+            )
+            return
+        }
+    }
+
     player.sendMessagePrefixed("commands.world.info.creating", placeholders = mapOf("world" to worldName), default = "<green>Creating world {world}")
 
-    val world = WorldOperations.createWorld(worldName, generator)
+    val world = WorldOperations.createWorld(worldName, resolved?.generator)
         ?: return player.sendMessagePrefixed("commands.world.errors.failed-to-create", placeholders = mapOf("world" to worldName), default = "<red>Failed to create world {world}")
 
-    if (generator != null) {
-        WorldOperations.registerGeneratorInBukkitConfig(worldName, generator)
-    }
+    resolved?.let { WorldOperations.registerGeneratorInBukkitConfig(worldName, it.configSpec) }
 
     Bukkit.getScheduler().runTaskLater(WorldEngine.instance, Runnable {
         WorldOperations.teleportToWorldSpawn(player, world)

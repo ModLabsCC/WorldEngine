@@ -12,3 +12,7 @@ dependencies:
     PlaceholderAPI:
       load: BEFORE
       required: false
+    PlotSquared:
+      load: AFTER
+      required: false
+      join-classpath: false

@@ -7,16 +7,13 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import io.papermc.paper.command.brigadier.argument.CustomArgumentType
-import org.bukkit.generator.ChunkGenerator
 import java.util.concurrent.CompletableFuture
 
-class ChunkGeneratorArgumentType : CustomArgumentType.Converted<ChunkGenerator, String> {
+class ChunkGeneratorArgumentType : CustomArgumentType.Converted<String, String> {
 
-    override fun convert(nativeType: String): ChunkGenerator = ChunkGenerators.resolve(nativeType)
+    override fun convert(nativeType: String): String = nativeType
 
-    override fun getNativeType(): ArgumentType<String> {
-        return StringArgumentType.greedyString()
-    }
+    override fun getNativeType(): ArgumentType<String> = StringArgumentType.greedyString()
 
     override fun <S : Any> listSuggestions(
         context: CommandContext<S>,
@@ -25,5 +22,4 @@ class ChunkGeneratorArgumentType : CustomArgumentType.Converted<ChunkGenerator, 
         ChunkGenerators.suggestionStrings().forEach { builder.suggest(it) }
         return builder.buildFuture()
     }
-
 }
