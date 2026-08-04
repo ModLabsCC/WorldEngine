@@ -23,8 +23,9 @@ object ChunkGenerators {
         resolveForWorld(spec, worldName).generator
 
     internal fun resolveForWorld(spec: String, worldName: String? = null): ResolvedGenerator {
-        presets[spec.lowercase()]?.let { generator ->
-            return ResolvedGenerator(generator, "WorldEngine:${generator.javaClass.name}")
+        resolveWorldEngineId(spec)?.let { generator ->
+            val id = if (generator is FlatWorldGenerator) "flat:${generator.baseHeight}" else spec.lowercase()
+            return ResolvedGenerator(generator, "WorldEngine:$id")
         }
 
         val split = spec.split(":", limit = 2)
@@ -44,4 +45,14 @@ object ChunkGenerators {
 
     fun suggestionStrings(): List<String> = presets.keys.toList() +
         Bukkit.getPluginManager().plugins.filter { it.isEnabled }.map { "${it.name}:" }
+
+    internal fun resolveWorldEngineId(id: String?): ChunkGenerator? {
+        if (id.isNullOrBlank()) return null
+        val split = id.split(":", limit = 2)
+        val preset = presets[split[0].lowercase()] ?: return null
+        val option = split.getOrNull(1) ?: return preset
+        require(split[0].equals("flat", ignoreCase = true)) { "Preset '${split[0]}' does not accept options" }
+        val height = option.toIntOrNull() ?: throw IllegalArgumentException("Flat height '$option' is not a number")
+        return FlatWorldGenerator(baseHeight = height)
+    }
 }

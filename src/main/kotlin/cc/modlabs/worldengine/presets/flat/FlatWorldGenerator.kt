@@ -10,7 +10,18 @@ import org.bukkit.generator.WorldInfo
 import java.util.*
 import kotlin.random.asKotlinRandom
 
-open class FlatWorldGenerator(val groundMaterial: Material = Material.GRASS_BLOCK) : ChunkGenerator() {
+open class FlatWorldGenerator(
+    val groundMaterial: Material = Material.GRASS_BLOCK,
+    val baseHeight: Int = DEFAULT_BASE_HEIGHT
+) : ChunkGenerator() {
+
+    init {
+        require(baseHeight in 1..318) { "Flat base height must be between 1 and 318" }
+    }
+
+    companion object {
+        const val DEFAULT_BASE_HEIGHT = 128
+    }
 
     override fun shouldGenerateNoise(): Boolean = false
 
@@ -24,7 +35,7 @@ open class FlatWorldGenerator(val groundMaterial: Material = Material.GRASS_BLOC
 
     override fun getDefaultPopulators(world: World): List<BlockPopulator> = Collections.emptyList()
 
-    override fun getBaseHeight(worldInfo: WorldInfo, random: Random, x: Int, z: Int, heightMap: HeightMap): Int = 192
+    override fun getBaseHeight(worldInfo: WorldInfo, random: Random, x: Int, z: Int, heightMap: HeightMap): Int = baseHeight
 
     override fun generateBedrock(worldInfo: WorldInfo, random: Random, chunkX: Int, chunkZ: Int, chunkData: ChunkData) {
         for (x in 0..15) {
@@ -38,11 +49,11 @@ open class FlatWorldGenerator(val groundMaterial: Material = Material.GRASS_BLOC
         val ktRandom = random.asKotlinRandom()
         for (x in 0..15) {
             for (z in 0..15) {
-                for (y in -62..192) {
+                for (y in -62..baseHeight) {
                     when {
-                        y < 190 -> chunkData.setBlock(x, y, z, MaterialSetTag.BASE_STONE_OVERWORLD.values.random(ktRandom))
-                        y == 190 -> chunkData.setBlock(x, y, z, Material.MOSS_BLOCK)
-                        y == 191 -> chunkData.setBlock(x, y, z, groundMaterial)
+                        y < baseHeight - 2 -> chunkData.setBlock(x, y, z, MaterialSetTag.BASE_STONE_OVERWORLD.values.random(ktRandom))
+                        y == baseHeight - 2 -> chunkData.setBlock(x, y, z, Material.MOSS_BLOCK)
+                        y == baseHeight - 1 -> chunkData.setBlock(x, y, z, groundMaterial)
                         else -> if (groundMaterial == Material.GRASS_BLOCK) random.nextDouble().let {
                             when {
                                 it < 0.1 -> chunkData.setBlock(x, y, z, Material.SHORT_GRASS)

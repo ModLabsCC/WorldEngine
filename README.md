@@ -55,6 +55,10 @@ api.teleportToWorldSpawn(player, world)
 val flatGenerator = api.resolveChunkGenerator("flat")
 api.createWorld("flat_event", flatGenerator)
 
+// Custom flat base height
+val lowFlatGenerator = api.resolveChunkGenerator("flat:64")
+api.createWorld("low_flat_event", lowFlatGenerator)
+
 // Copy world asynchronously-ish on main thread callback
 api.scheduleWorldCopy(world, "event_world_backup") { result ->
     result.onSuccess { copied ->
@@ -89,7 +93,7 @@ if (world != null) {
 
 - API methods are designed to mirror existing command/startup features.
 - Permission enforcement is not automatic for API callers; handle authorization in your plugin.
-- Built-in generator ids are `empty`, `flat`, and `ocean`.
+- Built-in generator ids are `empty`, `flat`, and `ocean`. `flat` defaults to base height 128; use `flat:<height>` to override it.
 
 ## Dependency (for plugin developers)
 

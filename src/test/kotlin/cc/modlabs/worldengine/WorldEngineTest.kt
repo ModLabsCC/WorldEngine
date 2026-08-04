@@ -2,6 +2,7 @@ package cc.modlabs.worldengine
 
 import cc.modlabs.kpaper.main.Feature
 import cc.modlabs.worldengine.commands.arguments.ChunkGeneratorArgumentType
+import cc.modlabs.worldengine.presets.flat.FlatWorldGenerator
 import cc.modlabs.worldengine.world.ChunkGenerators
 import cc.modlabs.worldengine.world.generatorConfigSpec
 import cc.modlabs.worldengine.world.isValidWorldName
@@ -20,8 +21,12 @@ class WorldEngineTest {
     @Test
     fun `built-in generators keep a restart-safe config spec`() {
         val resolved = ChunkGenerators.resolveForWorld("flat", "worldengine_plots")
+        val custom = ChunkGenerators.resolveForWorld("flat:64", "low_flat")
 
-        assertTrue(resolved.configSpec.startsWith("WorldEngine:"))
+        assertEquals(128, (resolved.generator as FlatWorldGenerator).baseHeight)
+        assertEquals("WorldEngine:flat:128", resolved.configSpec)
+        assertEquals(64, (custom.generator as FlatWorldGenerator).baseHeight)
+        assertEquals("WorldEngine:flat:64", custom.configSpec)
         assertEquals("PlotSquared", generatorConfigSpec("PlotSquared", null))
         assertEquals("PlotSquared:single", generatorConfigSpec("PlotSquared", "single"))
         assertEquals("PlotSquared", ChunkGeneratorArgumentType().convert("PlotSquared"))
