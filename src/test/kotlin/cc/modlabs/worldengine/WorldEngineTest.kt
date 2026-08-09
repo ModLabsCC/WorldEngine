@@ -9,6 +9,7 @@ import cc.modlabs.worldengine.world.generatorConfigSpec
 import cc.modlabs.worldengine.world.isValidWorldName
 import cc.modlabs.worldengine.world.matchesWorldPermission
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import rufus.lzstring4java.LZString
 import java.nio.file.Files
 import kotlin.test.Test
@@ -57,7 +58,9 @@ class WorldEngineTest {
         }
 
         val shareJson = JsonObject().apply {
+            addProperty("min_y", -512)
             addProperty("height", 1024)
+            addProperty("skybox", "none")
             add("attributes", JsonObject().apply {
                 add("minecraft:audio/background_music", JsonObject().apply {
                     add("default", JsonObject().apply { addProperty("sound", "bedrockia:music.void") })
@@ -72,6 +75,7 @@ class WorldEngineTest {
         }
         val decoded = DimensionDatapack.decodeSnippet(snippet.toString(), "example123")
         assertEquals(1024, decoded["height"].asInt)
+        assertEquals("none", decoded["skybox"].asString)
         val sound = decoded["attributes"].asJsonObject["minecraft:audio/background_music"]
             .asJsonObject["default"].asJsonObject["sound"].asJsonObject
         assertEquals("bedrockia:music.void", sound["sound_id"].asString)
@@ -81,14 +85,26 @@ class WorldEngineTest {
             DimensionDatapack.stage(directory, "void", decoded)
             val pack = directory.resolve("dimension-datapack")
             assertTrue(Files.isRegularFile(pack.resolve("pack.mcmeta")))
-            assertTrue(
+            val stagedType = JsonParser.parseString(
                 Files.readString(pack.resolve("data/worldengine/dimension_type/void.json"))
-                    .contains("\"height\": 1024")
-            )
+            ).asJsonObject
+            assertEquals(1024, stagedType["height"].asInt)
+            assertFalse(stagedType.has("skybox"))
             val dimension = Files.readString(pack.resolve("data/worldengine/dimension/void.json"))
             assertTrue(dimension.contains("\"type\": \"worldengine:void\""))
             assertTrue(dimension.contains("\"block\": \"minecraft:air\""))
             assertTrue(DimensionDatapack.hasDimension(directory, "void"))
+
+            val typeFile = pack.resolve("data/worldengine/dimension_type/void.json")
+            val oldType = JsonObject().apply {
+                addProperty("min_y", -512)
+                addProperty("height", 1024)
+                addProperty("skybox", "none")
+            }
+            Files.writeString(typeFile, oldType.toString())
+            assertEquals(1, DimensionDatapack.normalizeStagedDimensions(directory))
+            assertFalse(JsonParser.parseString(Files.readString(typeFile)).asJsonObject.has("skybox"))
+            assertEquals(0, DimensionDatapack.normalizeStagedDimensions(directory))
         } finally {
             directory.toFile().deleteRecursively()
         }

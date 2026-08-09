@@ -18,6 +18,7 @@ import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.Duration
@@ -41,6 +42,10 @@ object DimensionDatapack {
     fun discover(context: BootstrapContext, registrar: DatapackRegistrar) {
         val pack = packDirectory(context.dataDirectory)
         if (!Files.isRegularFile(pack.resolve("pack.mcmeta"))) return
+        val migrated = normalizeStagedDimensions(context.dataDirectory)
+        if (migrated > 0) {
+            context.logger.info("Made $migrated WorldEngine dimension type compatible with negative Y on Geyser")
+        }
         registrar.discoverPack(pack, "dimensions") { configurer ->
             configurer.title(Component.text("WorldEngine dimensions"))
                 .autoEnableOnServerStart(true)
@@ -110,6 +115,15 @@ object DimensionDatapack {
         return inlineCustomSounds(dimensionType)
     }
 
+    private fun normalizeForGeyser(dimensionType: JsonObject): JsonObject {
+        val copy = dimensionType.deepCopy()
+        val minY = runCatching { copy["min_y"]?.asInt }.getOrNull() ?: return copy
+        if (minY < 0 && copy["skybox"]?.asString in setOf("end", "none")) {
+            copy.remove("skybox")
+        }
+        return copy
+    }
+
     private fun inlineCustomSounds(dimensionType: JsonObject): JsonObject {
         val copy = dimensionType.deepCopy()
 
@@ -143,9 +157,28 @@ object DimensionDatapack {
         require(!Files.exists(dimensionFile)) { "Dimension '$worldKey' is already staged" }
 
         writeIfMissing(pack.resolve("pack.mcmeta"), PACK_META)
-        writeAtomically(typeFile, gson.toJson(dimensionType), replace = true)
+        writeAtomically(typeFile, gson.toJson(normalizeForGeyser(dimensionType)), replace = true)
         writeAtomically(dimensionFile, gson.toJson(voidDimension(worldKey)), replace = false)
         return dimensionFile
+    }
+
+    @Synchronized
+    internal fun normalizeStagedDimensions(dataDirectory: Path): Int {
+        val typeDirectory = packDirectory(dataDirectory).resolve("data/worldengine/dimension_type")
+        if (!Files.isDirectory(typeDirectory)) return 0
+        var changed = 0
+        Files.newDirectoryStream(typeDirectory, "*.json").use { files ->
+            for (file in files) {
+                if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) continue
+                val original = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).asJsonObject
+                val normalized = normalizeForGeyser(original)
+                if (normalized != original) {
+                    writeAtomically(file, gson.toJson(normalized), replace = true)
+                    changed++
+                }
+            }
+        }
+        return changed
     }
 
     internal fun hasDimension(dataDirectory: Path, worldKey: String): Boolean {

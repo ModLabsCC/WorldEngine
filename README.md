@@ -40,6 +40,8 @@ Stage a void dimension from a Minecraft 26.2 Misode Dimension Type share link:
 
 Restart the server once. WorldEngine registers the generated datapack during bootstrap and manages the loaded `worldengine:<world>` dimension afterward. Only HTTPS links from `misode.github.io/dimension-type/` are accepted.
 
+For Geyser compatibility, imported dimension types with a negative `min_y` are mapped to Bedrock's Overworld height model. Existing WorldEngine dimension types are migrated automatically during the next server bootstrap and loaded during that same start.
+
 ## API usage
 
 WorldEngine exposes a small Bukkit service API for other plugins:
