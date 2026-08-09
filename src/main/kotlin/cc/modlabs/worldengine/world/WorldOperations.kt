@@ -1,6 +1,7 @@
 package cc.modlabs.worldengine.world
 
 import cc.modlabs.worldengine.WorldEngine
+import cc.modlabs.worldengine.dimensions.DimensionDatapack
 import cc.modlabs.worldengine.utils.FileConfig
 import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
@@ -55,7 +56,7 @@ object WorldOperations {
     fun separateLevelKey(plugin: Plugin, worldName: String): NamespacedKey =
         NamespacedKey(plugin, sanitizeWorldKey(worldName))
 
-    private fun sanitizeWorldKey(worldName: String): String {
+    internal fun sanitizeWorldKey(worldName: String): String {
         val s = worldName.lowercase(Locale.ROOT)
             .replace(' ', '_')
             .replace(Regex("[^a-z0-9._-]"), "_")
@@ -207,12 +208,14 @@ object WorldOperations {
     fun isWorldLoaded(name: String): Boolean = resolveWorld(name) != null
 
     fun worldExists(name: String): Boolean =
-        resolveWorld(name) != null || levelRootDirectoryForUserWorldName(name).exists()
+        resolveWorld(name) != null || levelRootDirectoryForUserWorldName(name).exists() ||
+            DimensionDatapack.hasDimension(WorldEngine.instance.dataFolder.toPath(), sanitizeWorldKey(name))
 
     fun getWorld(name: String): World? = resolveWorld(name)
 
     fun getOrLoadWorld(name: String): World? {
         resolveWorld(name)?.let { return it }
+        if (DimensionDatapack.hasDimension(WorldEngine.instance.dataFolder.toPath(), sanitizeWorldKey(name))) return null
         val container = Bukkit.getWorldContainer()
         val key = separateLevelKey(managedPlugin(), name)
         val legacyFolderName = key.toLegacyBukkitLevelFolderName()

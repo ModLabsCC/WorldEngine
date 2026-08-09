@@ -3,6 +3,7 @@ package cc.modlabs.worldengine
 import cc.modlabs.worldengine.commands.createWorldCommand
 import cc.modlabs.worldengine.commands.createWorldEngineCommand
 import cc.modlabs.worldengine.commands.createWorldInfoCommand
+import cc.modlabs.worldengine.dimensions.DimensionDatapack
 import io.papermc.paper.plugin.bootstrap.BootstrapContext
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
@@ -11,6 +12,10 @@ class CommandBootstrapper : PluginBootstrap {
 
     override fun bootstrap(context: BootstrapContext) {
         val manager = context.lifecycleManager
+
+        manager.registerEventHandler(LifecycleEvents.DATAPACK_DISCOVERY) { event ->
+            DimensionDatapack.discover(context, event.registrar())
+        }
 
         manager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
             val commands = event.registrar()

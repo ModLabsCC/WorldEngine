@@ -2,13 +2,18 @@ package cc.modlabs.worldengine
 
 import cc.modlabs.kpaper.main.Feature
 import cc.modlabs.worldengine.commands.arguments.ChunkGeneratorArgumentType
+import cc.modlabs.worldengine.dimensions.DimensionDatapack
 import cc.modlabs.worldengine.presets.flat.FlatWorldGenerator
 import cc.modlabs.worldengine.world.ChunkGenerators
 import cc.modlabs.worldengine.world.generatorConfigSpec
 import cc.modlabs.worldengine.world.isValidWorldName
 import cc.modlabs.worldengine.world.matchesWorldPermission
+import com.google.gson.JsonObject
+import rufus.lzstring4java.LZString
+import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -39,5 +44,53 @@ class WorldEngineTest {
         assertFalse(isValidWorldName("../world"))
         assertTrue(matchesWorldPermission("event_*", "event_summer"))
         assertFalse(matchesWorldPermission("event.*", "event_summer"))
+    }
+
+    @Test
+    fun `Misode dimensions are validated and staged as a restart datapack`() {
+        assertEquals(
+            "tSSaLTUQ9R",
+            DimensionDatapack.extractShareId("https://misode.github.io/dimension-type/?share=tSSaLTUQ9R")
+        )
+        assertFailsWith<IllegalArgumentException> {
+            DimensionDatapack.extractShareId("https://example.com/dimension-type/?share=tSSaLTUQ9R")
+        }
+
+        val shareJson = JsonObject().apply {
+            addProperty("height", 1024)
+            add("attributes", JsonObject().apply {
+                add("minecraft:audio/background_music", JsonObject().apply {
+                    add("default", JsonObject().apply { addProperty("sound", "bedrockia:music.void") })
+                })
+            })
+        }
+        val snippet = JsonObject().apply {
+            addProperty("id", "example123")
+            addProperty("type", "dimension_type")
+            addProperty("version", "26.2")
+            addProperty("data", LZString.compressToBase64(shareJson.toString()))
+        }
+        val decoded = DimensionDatapack.decodeSnippet(snippet.toString(), "example123")
+        assertEquals(1024, decoded["height"].asInt)
+        val sound = decoded["attributes"].asJsonObject["minecraft:audio/background_music"]
+            .asJsonObject["default"].asJsonObject["sound"].asJsonObject
+        assertEquals("bedrockia:music.void", sound["sound_id"].asString)
+
+        val directory = Files.createTempDirectory("worldengine-dimension-test")
+        try {
+            DimensionDatapack.stage(directory, "void", decoded)
+            val pack = directory.resolve("dimension-datapack")
+            assertTrue(Files.isRegularFile(pack.resolve("pack.mcmeta")))
+            assertTrue(
+                Files.readString(pack.resolve("data/worldengine/dimension_type/void.json"))
+                    .contains("\"height\": 1024")
+            )
+            val dimension = Files.readString(pack.resolve("data/worldengine/dimension/void.json"))
+            assertTrue(dimension.contains("\"type\": \"worldengine:void\""))
+            assertTrue(dimension.contains("\"block\": \"minecraft:air\""))
+            assertTrue(DimensionDatapack.hasDimension(directory, "void"))
+        } finally {
+            directory.toFile().deleteRecursively()
+        }
     }
 }

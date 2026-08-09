@@ -21,6 +21,10 @@ commands:
     info:
       reloading: "<yellow>Reloading messages..."
       reloaded: "<green>Messages reloaded!"
+      dimension-importing: "<yellow>Importing dimension type for <yellow>{world}</yellow>..."
+      dimension-staged: "<green>Dimension <yellow>{world}</yellow> is ready. Restart the server to load it."
+    errors:
+      dimension-import-failed: "<red>Could not prepare dimension <yellow>{world}</yellow>. Check the link and server log."
   worldinfo:
     info:
       currentWorld: "You are in world <yellow>{world}<color:#b2c2d4>."

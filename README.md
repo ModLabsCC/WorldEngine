@@ -29,6 +29,17 @@ Jenkins builds with the jdk25 tool and exposes the successful JAR as a downloada
 Use PlotSquared's normal `/plot setup` workflow and keep `PlotSquared` selected as the generator. PlotSquared creates the Bukkit world; WorldEngine discovers the loaded world automatically and manages it through `/world <name>` and the WorldEngine API.
 
 WorldEngine intentionally does not register itself as a `/plot setup` generator.
+
+## Custom dimensions
+
+Stage a void dimension from a Minecraft 26.2 Misode Dimension Type share link:
+
+```text
+/worldengine dimension create <world> <share-link>
+```
+
+Restart the server once. WorldEngine registers the generated datapack during bootstrap and manages the loaded `worldengine:<world>` dimension afterward. Only HTTPS links from `misode.github.io/dimension-type/` are accepted.
+
 ## API usage
 
 WorldEngine exposes a small Bukkit service API for other plugins:

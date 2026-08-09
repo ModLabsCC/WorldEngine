@@ -44,7 +44,7 @@ class WorldEngine : KPlugin() {
         )
 
         // Copy the messages file to the plugins folder
-        saveResource("messages.yml", false)
+        if (!dataFolder.resolve("messages.yml").isFile) saveResource("messages.yml", false)
 
         // Plugin startup logic
         val time = measureTimeMillis {

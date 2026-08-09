@@ -53,6 +53,7 @@ kpaper {
         "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesCoreVersion",
         "org.jetbrains.kotlinx:kotlinx-collections-immutable:$kotlinxCollectionsImmutableVersion",
         "com.google.code.gson:gson:$gsonVersion",
+        "com.github.wajda:lzstring4java:0.1",
 
         "io.github.cdimascio:dotenv-kotlin:$dotenvKotlinVersion", // - .env support
         "org.slf4j:slf4j-api:$slf4jVersion",
