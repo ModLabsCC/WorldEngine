@@ -4,8 +4,8 @@ import java.util.*
 plugins {
     kotlin("jvm") version "2.4.10"
     `java-library`
-    id("io.papermc.paperweight.userdev") version "2.0.0-SNAPSHOT"
-    id("cc.modlabs.kpaper-gradle") version "2026.7.18.0717+kpaper.2026.7.18.0716"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.22"
+    id("cc.modlabs.kpaper-gradle") version "2026.9.23.1656+kpaper.2026.9.23.1637"
     id("maven-publish")
 }
 
@@ -30,15 +30,21 @@ val gsonVersion: String by project
 val mcCoroutineVersion: String by project
 
 repositories {
-    maven("https://repo-api.modlabs.cc/repo/maven/maven-mirror/")
+    mavenLocal()
+    mavenCentral()
+    maven("https://repo.extendedclip.com/releases/")
     maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.codemc.io/repository/maven-releases/")
+    maven("https://repo.codemc.io/repository/maven-snapshots/")
+    maven("https://repo-api.modlabs.cc/repo/maven/maven-public/")
+    maven("https://repo-api.modlabs.cc/repo/maven/maven-mirror/")
 }
 
 
 dependencies {
-    paperweight.paperDevBundle("$minecraftVersion.build.60-beta")
+    paperweight.paperDevBundle("$minecraftVersion.build.42-alpha")
 
-    compileOnly("me.clip:placeholderapi:2.12.2")
+    compileOnly("me.clip:placeholderapi:2.12.3")
     testImplementation(kotlin("test"))
 }
 

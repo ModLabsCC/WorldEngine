@@ -3,7 +3,7 @@ main: cc.modlabs.worldengine.WorldEngine
 version: ${version}
 description: "WorldManagement kept ahead of the curve, always planning a step further"
 author: "LiamXSage"
-api-version: "26.2"
+api-version: "26.3"
 bootstrapper: cc.modlabs.worldengine.CommandBootstrapper
 load: STARTUP
 
