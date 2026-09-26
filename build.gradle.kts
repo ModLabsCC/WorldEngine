@@ -5,7 +5,7 @@ plugins {
     kotlin("jvm") version "2.4.10"
     `java-library`
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.22"
-    id("cc.modlabs.kpaper-gradle") version "2026.9.23.1656+kpaper.2026.9.23.1637"
+    id("cc.modlabs.kpaper-gradle") version "2026.9.26.1231+kpaper.2026.9.23.1637"
     id("maven-publish")
 }
 
@@ -31,13 +31,11 @@ val mcCoroutineVersion: String by project
 
 repositories {
     mavenLocal()
-    mavenCentral()
+    maven("https://repo-api.modlabs.cc/repo/maven/maven-mirror/")
     maven("https://repo.extendedclip.com/releases/")
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.codemc.io/repository/maven-releases/")
     maven("https://repo.codemc.io/repository/maven-snapshots/")
-    maven("https://repo-api.modlabs.cc/repo/maven/maven-public/")
-    maven("https://repo-api.modlabs.cc/repo/maven/maven-mirror/")
 }
 
 
