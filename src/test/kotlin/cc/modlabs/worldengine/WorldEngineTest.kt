@@ -70,10 +70,14 @@ class WorldEngineTest {
         val snippet = JsonObject().apply {
             addProperty("id", "example123")
             addProperty("type", "dimension_type")
-            addProperty("version", "26.2")
+            addProperty("version", "26.3")
             addProperty("data", LZString.compressToBase64(shareJson.toString()))
         }
         val decoded = DimensionDatapack.decodeSnippet(snippet.toString(), "example123")
+        val outdatedSnippet = snippet.deepCopy().apply { addProperty("version", "26.2") }
+        assertFailsWith<IllegalArgumentException> {
+            DimensionDatapack.decodeSnippet(outdatedSnippet.toString(), "example123")
+        }
         assertEquals(1024, decoded["height"].asInt)
         assertEquals("none", decoded["skybox"].asString)
         val sound = decoded["attributes"].asJsonObject["minecraft:audio/background_music"]
@@ -84,7 +88,10 @@ class WorldEngineTest {
         try {
             DimensionDatapack.stage(directory, "void", decoded)
             val pack = directory.resolve("dimension-datapack")
-            assertTrue(Files.isRegularFile(pack.resolve("pack.mcmeta")))
+            val metadata = JsonParser.parseString(Files.readString(pack.resolve("pack.mcmeta"))).asJsonObject["pack"].asJsonObject
+            assertEquals(121, metadata["pack_format"].asInt)
+            assertEquals("[121,0]", metadata["min_format"].toString())
+            assertEquals("[121,0]", metadata["max_format"].toString())
             val stagedType = JsonParser.parseString(
                 Files.readString(pack.resolve("data/worldengine/dimension_type/void.json"))
             ).asJsonObject
@@ -105,6 +112,75 @@ class WorldEngineTest {
             assertEquals(1, DimensionDatapack.normalizeStagedDimensions(directory))
             assertFalse(JsonParser.parseString(Files.readString(typeFile)).asJsonObject.has("skybox"))
             assertEquals(0, DimensionDatapack.normalizeStagedDimensions(directory))
+        } finally {
+            directory.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `existing dimension packs migrate to 26_3 without losing custom metadata`() {
+        val directory = Files.createTempDirectory("worldengine-legacy-dimension-test")
+        try {
+            val pack = directory.resolve("dimension-datapack")
+            val types = pack.resolve("data/worldengine/dimension_type")
+            Files.createDirectories(types)
+            Files.writeString(pack.resolve("pack.mcmeta"), """
+                {"pack":{"description":"Custom description","pack_format":107,
+                "min_format":[107,1],"max_format":[107,1]},"custom":{"keep":true}}
+            """.trimIndent())
+            Files.writeString(types.resolve("legacy.json"), """
+                {"min_y":0,"height":256,"attributes":{
+                  "minecraft:gameplay/bed_rule":{"can_sleep":"never","explodes":true}
+                }}
+            """.trimIndent())
+            Files.writeString(types.resolve("explicit.json"), """
+                {"min_y":0,"height":256,"attributes":{
+                  "minecraft:gameplay/bed_rule":{"explodes":true,"destroy_on_use":false}
+                }}
+            """.trimIndent())
+
+            assertEquals(2, DimensionDatapack.normalizeStagedDimensions(directory))
+            val metadata = JsonParser.parseString(Files.readString(pack.resolve("pack.mcmeta"))).asJsonObject
+            assertEquals(121, metadata["pack"].asJsonObject["pack_format"].asInt)
+            assertEquals("[121,0]", metadata["pack"].asJsonObject["min_format"].toString())
+            assertEquals("[121,0]", metadata["pack"].asJsonObject["max_format"].toString())
+            assertEquals("Custom description", metadata["pack"].asJsonObject["description"].asString)
+            assertTrue(metadata["custom"].asJsonObject["keep"].asBoolean)
+            val legacy = JsonParser.parseString(Files.readString(types.resolve("legacy.json")))
+                .asJsonObject["attributes"].asJsonObject["minecraft:gameplay/bed_rule"].asJsonObject
+            assertTrue(legacy["destroy_on_use"].asBoolean)
+            assertEquals("never", legacy["can_sleep"].asString)
+            assertFalse(legacy.has("explodes"))
+            val explicit = JsonParser.parseString(Files.readString(types.resolve("explicit.json")))
+                .asJsonObject["attributes"].asJsonObject["minecraft:gameplay/bed_rule"].asJsonObject
+            assertFalse(explicit["destroy_on_use"].asBoolean)
+            assertFalse(explicit.has("explodes"))
+            val migratedMetadata = Files.readString(pack.resolve("pack.mcmeta"))
+            assertEquals(0, DimensionDatapack.normalizeStagedDimensions(directory))
+            assertEquals(migratedMetadata, Files.readString(pack.resolve("pack.mcmeta")))
+        } finally {
+            directory.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `staging a dimension refreshes existing pack metadata`() {
+        val directory = Files.createTempDirectory("worldengine-staging-migration-test")
+        try {
+            val pack = directory.resolve("dimension-datapack")
+            Files.createDirectories(pack)
+            Files.writeString(pack.resolve("pack.mcmeta"), """
+                {"pack":{"description":"WorldEngine dimensions","pack_format":107,
+                "min_format":[107,1],"max_format":[107,1]}}
+            """.trimIndent())
+            DimensionDatapack.stage(directory, "new_void", JsonObject().apply {
+                addProperty("min_y", 0)
+                addProperty("height", 256)
+            })
+            val metadata = JsonParser.parseString(Files.readString(pack.resolve("pack.mcmeta"))).asJsonObject
+            assertEquals(121, metadata["pack"].asJsonObject["pack_format"].asInt)
+            assertEquals("[121,0]", metadata["pack"].asJsonObject["min_format"].toString())
+            assertEquals("[121,0]", metadata["pack"].asJsonObject["max_format"].toString())
         } finally {
             directory.toFile().deleteRecursively()
         }
