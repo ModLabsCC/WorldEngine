@@ -177,7 +177,7 @@ class WorldEngineTest {
             val pack = directory.resolve("dimension-datapack")
             Files.createDirectories(pack)
             Files.writeString(pack.resolve("pack.mcmeta"), """
-                {"pack":{"description":"WorldEngine dimensions","pack_format":107,
+                {"pack":{"description":{"text":"Custom","color":"gold"},"pack_format":107,
                 "min_format":[107,1],"max_format":[107,1]},"custom":{"keep":true}}
             """.trimIndent())
             DimensionDatapack.stage(directory, "new_void", JsonObject().apply {
@@ -185,6 +185,8 @@ class WorldEngineTest {
                 addProperty("height", 256)
             })
             val metadata = JsonParser.parseString(Files.readString(pack.resolve("pack.mcmeta"))).asJsonObject
+            assertEquals("Custom", metadata["pack"].asJsonObject["description"].asJsonObject["text"].asString)
+            assertEquals("gold", metadata["pack"].asJsonObject["description"].asJsonObject["color"].asString)
             assertTrue(metadata["custom"].asJsonObject["keep"].asBoolean)
             assertEquals(121, metadata["pack"].asJsonObject["pack_format"].asInt)
             assertEquals("[121,0]", metadata["pack"].asJsonObject["min_format"].toString())

@@ -18,11 +18,23 @@
 
 ## Compatibility
 
-- Paper 26.2
+- Paper 26.3 (compiled against `26.3.build.42-alpha`)
 - Java 25
 - KPaper lifecycle with all optional KPaper features disabled
 
-Jenkins builds with the jdk25 tool and exposes the successful JAR as a downloadable build artifact.
+### Build and validate
+
+With JDK 25 selected, run the checked-in Gradle wrapper:
+
+```sh
+bash gradlew clean build --refresh-dependencies --no-daemon
+```
+
+The build compiles against Paper 26.3 and runs the unit tests. The plugin JAR is written to `build/libs/`. Pull requests run this same clean build without publishing a release. Jenkins uses its `jdk25` tool and exposes the successful JAR as a downloadable artifact.
+
+KPaperGradle is pinned to the last version that resolves both build and runtime libraries through Maven Central, ModLabs' hosted repository, and CodeMC rather than depending on the broad ModLabs mirror. The KPaper library version remains `2026.9.23.1637`. Malformed mirror responses caused the failed release build; do not restore the mirror-only plugin until its repository routing is fixed.
+
+Before releasing, smoke-test the JAR on an isolated Paper 26.3 server: start with an existing managed dimension, import a new 26.3 Misode share, restart, and verify world loading, teleportation, and generators. Unit tests do not replace this server check.
 
 ## PlotSquared compatibility
 
@@ -32,13 +44,15 @@ WorldEngine intentionally does not register itself as a `/plot setup` generator.
 
 ## Custom dimensions
 
-Stage a void dimension from a Minecraft 26.2 Misode Dimension Type share link:
+Stage a void dimension from a Minecraft 26.3 Misode Dimension Type share link:
 
 ```text
 /worldengine dimension create <world> <share-link>
 ```
 
 Restart the server once. WorldEngine registers the generated datapack during bootstrap and manages the loaded `worldengine:<world>` dimension afterward. Only HTTPS links from `misode.github.io/dimension-type/` are accepted.
+
+Managed dimension datapacks use Minecraft 26.3 data pack format 121.0. Existing WorldEngine 26.2 packs are upgraded on bootstrap: pack metadata is refreshed and the bed-rule `explodes` field is migrated to `destroy_on_use`. New imports must use a 26.3 Misode share. Back up your worlds and `plugins/WorldEngine/dimension-datapack` before upgrading.
 
 For Geyser compatibility, imported dimension types with a negative `min_y` are mapped to Bedrock's Overworld height model. Existing WorldEngine dimension types are migrated automatically during the next server bootstrap and loaded during that same start.
 
@@ -116,7 +130,7 @@ WorldEngine is published to ModLabs Nexus.
 
 ```kotlin
 repositories {
-    maven("https://repo-api.modlabs.cc/repo/maven/maven-mirror/")
+    maven("https://repo-api.modlabs.cc/repo/maven/maven-public/")
 }
 
 dependencies {
