@@ -28,7 +28,7 @@ object DimensionDatapack {
     private const val PACK_DIRECTORY = "dimension-datapack"
     private const val SHARE_HOST = "misode.github.io"
     private const val SNIPPET_HOST = "snippets.misode.workers.dev"
-    private const val MINECRAFT_VERSION = "26.2"
+    private const val MINECRAFT_VERSION = "26.3"
     private const val MAX_RESPONSE_BYTES = 32 * 1024
     private const val MAX_JSON_CHARS = 64 * 1024
     private val shareIdPattern = Regex("[A-Za-z0-9_-]{6,64}")
@@ -44,7 +44,7 @@ object DimensionDatapack {
         if (!Files.isRegularFile(pack.resolve("pack.mcmeta"))) return
         val migrated = normalizeStagedDimensions(context.dataDirectory)
         if (migrated > 0) {
-            context.logger.info("Made $migrated WorldEngine dimension type compatible with negative Y on Geyser")
+            context.logger.info("Migrated $migrated WorldEngine dimension types for Minecraft $MINECRAFT_VERSION and Geyser")
         }
         registrar.discoverPack(pack, "dimensions") { configurer ->
             configurer.title(Component.text("WorldEngine dimensions"))
@@ -115,8 +115,14 @@ object DimensionDatapack {
         return inlineCustomSounds(dimensionType)
     }
 
-    private fun normalizeForGeyser(dimensionType: JsonObject): JsonObject {
+    private fun normalizeDimensionType(dimensionType: JsonObject): JsonObject {
         val copy = dimensionType.deepCopy()
+        // Minecraft 26.3 renamed this field. Keep an explicit new value if both are present.
+        val bedRule = copy.getAsJsonObject("attributes")?.getAsJsonObject("minecraft:gameplay/bed_rule")
+        bedRule?.remove("explodes")?.let { legacyValue ->
+            if (!bedRule.has("destroy_on_use")) bedRule.add("destroy_on_use", legacyValue)
+        }
+
         val minY = runCatching { copy["min_y"]?.asInt }.getOrNull() ?: return copy
         if (minY < 0 && copy["skybox"]?.asString in setOf("end", "none")) {
             copy.remove("skybox")
@@ -156,8 +162,9 @@ object DimensionDatapack {
         val dimensionFile = pack.resolve("data/worldengine/dimension/$worldKey.json")
         require(!Files.exists(dimensionFile)) { "Dimension '$worldKey' is already staged" }
 
+        normalizeStagedDimensions(dataDirectory)
         writeIfMissing(pack.resolve("pack.mcmeta"), PACK_META)
-        writeAtomically(typeFile, gson.toJson(normalizeForGeyser(dimensionType)), replace = true)
+        writeAtomically(typeFile, gson.toJson(normalizeDimensionType(dimensionType)), replace = true)
         writeAtomically(dimensionFile, gson.toJson(voidDimension(worldKey)), replace = false)
         return dimensionFile
     }
@@ -165,20 +172,41 @@ object DimensionDatapack {
     @Synchronized
     internal fun normalizeStagedDimensions(dataDirectory: Path): Int {
         val typeDirectory = packDirectory(dataDirectory).resolve("data/worldengine/dimension_type")
-        if (!Files.isDirectory(typeDirectory)) return 0
         var changed = 0
-        Files.newDirectoryStream(typeDirectory, "*.json").use { files ->
-            for (file in files) {
-                if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) continue
-                val original = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).asJsonObject
-                val normalized = normalizeForGeyser(original)
-                if (normalized != original) {
-                    writeAtomically(file, gson.toJson(normalized), replace = true)
-                    changed++
+        if (Files.isDirectory(typeDirectory)) {
+            Files.newDirectoryStream(typeDirectory, "*.json").use { files ->
+                for (file in files) {
+                    if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) continue
+                    val original = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).asJsonObject
+                    val normalized = normalizeDimensionType(original)
+                    if (normalized != original) {
+                        writeAtomically(file, gson.toJson(normalized), replace = true)
+                        changed++
+                    }
                 }
             }
         }
+        // Advertise the new format only after every dimension has migrated successfully.
+        upgradePackMetadata(packDirectory(dataDirectory).resolve("pack.mcmeta"))
         return changed
+    }
+
+    private fun upgradePackMetadata(path: Path) {
+        if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) return
+        val metadata = JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8)).asJsonObject
+        val pack = metadata.getAsJsonObject("pack") ?: return
+        // Only upgrade the format produced by WorldEngine's 26.2 implementation.
+        // Leave current, unknown, or newer packs alone rather than silently downgrading them.
+        if (pack["pack_format"]?.asInt != 107) return
+        val currentPack = JsonParser.parseString(PACK_META).asJsonObject.getAsJsonObject("pack")
+        for (field in listOf("pack_format", "min_format", "max_format")) {
+            pack.add(field, currentPack[field].deepCopy())
+        }
+        val description = pack["description"]?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }
+        if (description?.asString == "WorldEngine managed dimensions for Minecraft Java 26.2") {
+            pack.add("description", currentPack["description"].deepCopy())
+        }
+        writeAtomically(path, gson.toJson(metadata), replace = true)
     }
 
     internal fun hasDimension(dataDirectory: Path, worldKey: String): Boolean {
@@ -244,10 +272,10 @@ object DimensionDatapack {
     private val PACK_META = """
         {
           "pack": {
-            "description": "WorldEngine managed dimensions for Minecraft Java 26.2",
-            "pack_format": 107,
-            "min_format": [107, 1],
-            "max_format": [107, 1]
+            "description": "WorldEngine managed dimensions for Minecraft Java $MINECRAFT_VERSION",
+            "pack_format": 121,
+            "min_format": [121, 0],
+            "max_format": [121, 0]
           }
         }
     """.trimIndent()
